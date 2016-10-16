@@ -152,10 +152,5 @@ def t_ID(t):
     return t
 
 
-
-
-
-
-
 # Build lexer
 lexer = lex.lex()

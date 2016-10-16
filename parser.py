@@ -228,8 +228,5 @@ precedence = (
 )
 
 
-
-
-
 # Build the parser
 parser = yacc.yacc(start='program')
