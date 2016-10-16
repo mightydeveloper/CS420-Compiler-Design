@@ -38,6 +38,12 @@ class MiniCLexer(object):
             tokens.append(tok)
         return tokens
 
+    def reset_lineno(self):
+        """ Resets the internal line number counter of the lexer.
+        """
+        self.lexer.lineno = 1
+
+
     # Error handling rule
     def t_error(self, t):
         print("Illegal character '%s'" % t.value[0])
@@ -93,6 +99,8 @@ class MiniCLexer(object):
     # Ignore space and tabs
     t_ignore = ' \t'
 
+    t_UNOP= r'-'
+
     t_PLUS   = r'\+'
     t_MINUS  = r'-'
     t_TIMES  = r'\*'
@@ -105,10 +113,20 @@ class MiniCLexer(object):
     t_EQ = r'=='
     t_NE = r'!='
 
+    t_ASSIGN = r'='
+
     # Delimeters
     t_LPAREN = r'\('
     t_RPAREN = r'\)'
+    t_LBRACE = r'{'
+    t_RBRACE = r'}'
+    t_LBRACKET = r'\['
+    t_RBRACKET = r'\]'
 
+
+    t_COMMA = r','
+    t_SEMI = r';'
+    t_COLON = r':'
 
     def t_INTNUM(self, t):
         r'[0-9]+'
@@ -116,7 +134,7 @@ class MiniCLexer(object):
         return t
 
     def t_FLOATNUM(self, t):
-        r'[0-9]+.[0-9]+'
+        r'[0-9]+\.[0-9]+'
         t.value = float(t.value)
         return t
 

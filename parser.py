@@ -2,7 +2,36 @@ import ply.yacc as yacc
 
 #from ply.plyparser import PLYParser, Coord, ParseError
 
+from lexer import MiniCLexer
+
 class MiniCParser(object):
+    def __init__(self):
+        self.lexer = MiniCLexer()
+        self.tokens = self.lexer.tokens
+        self.parser = yacc.yacc()
+
+    def parse(self, text, filename='', debuglevel=0):
+        """ Parses C code and returns an AST.
+            text:
+                A string containing the C source code
+            filename:
+                Name of the file being parsed (for meaningful
+                error messages)
+            debuglevel:
+                Debug level to yacc
+        """
+        self.lexer.filename = filename
+        self.lexer.reset_lineno()
+        # self._scope_stack = [dict()]
+        # self._last_yielded_token = None
+        return self.parser.parse(
+            input=text,
+            lexer=self.lexer,
+            debug=debuglevel)
+
+    # Error rule for syntax errors
+    def p_error(p):
+        print("Syntax error in input!")
 
     ## Grammar productions
     # This is equivalent to epsilon
@@ -108,8 +137,8 @@ class MiniCParser(object):
         pass
 
     def p_call(self, p):
-        """ call : ID LPAREN arglist RPAREN
-                 | ID LPAREN RPAREN
+        """ call : ID LPAREN arglist RPAREN %prec FUNC
+                 | ID LPAREN RPAREN %prec FUNC
         """
         pass
 
@@ -186,7 +215,6 @@ class MiniCParser(object):
         """
         pass
 
-
     def p_arglist(self, p):
         """ arglist : expr
                     | arglist COMMA expr
@@ -202,7 +230,7 @@ class MiniCParser(object):
         ('left', 'PLUS', 'MINUS'),              # Addition and Subtraction
         ('left', 'TIMES', 'DIVIDE'),            # Multiplication and division
         ('right', 'UNMINUS'),                   # Unary minus
-        # FIXME ! ('left', ),                             # Function call
+        ('left', 'FUNC'),                       # Function call
 
     )
 
