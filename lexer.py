@@ -1,152 +1,161 @@
+## Lexer (Tokenizer) implementation
+## 20121022 Young Seok Kim
+
+
+
 import ply.lex as lex
-from ply.lex import TOKEN
+#from ply.lex import TOKEN
 
 
 
-class MiniCLexer(object):
-    """
-    """
+#
+# def build(**kwargs):
+#     """ Builds the lexer from the specification. Must be
+#         called after the lexer object is created.
+#         This method exists separately, because the PLY
+#         manual warns against calling lex.lex inside
+#         __init__
+#     """
+#     lexer = lex.lex(object=self, **kwargs)
+#
+# def input(text):
+#     self.lexer.input(text)
+#
+# def printTokens(self):
+#     # Tokenize
+#     while True:
+#         tok = self.lexer.token()
+#         if not tok:
+#             break  # No more input
+#         print(tok)
+#
+# def generateTokens(self, text):
+#     self.lexer.input(text)
+#     tokens = []
+#     # Tokenize
+#     while True:
+#         tok = self.lexer.token()
+#         if not tok:
+#             break  # No more input
+#         tokens.append(tok)
+#     return tokens
 
-    def build(self, **kwargs):
-        """ Builds the lexer from the specification. Must be
-            called after the lexer object is created.
-            This method exists separately, because the PLY
-            manual warns against calling lex.lex inside
-            __init__
-        """
-        self.lexer = lex.lex(object=self, **kwargs)
+# def reset_lineno(self):
+#     """ Resets the internal line number counter of the lexer.
+#     """
+#     self.lexer.lineno = 1
 
-    def input(self, text):
-        self.lexer.input(text)
+# Define a rule so we can track line numbers
+def t_newline(t):
+    r'\n+'
+    t.lexer.lineno += len(t.value)
 
-    def printTokens(self):
-        # Tokenize
-        while True:
-            tok = self.lexer.token()
-            if not tok:
-                break  # No more input
-            print(tok)
+# Error handling rule
+def t_error(t):
+    print("Illegal character '%s'" % t.value[0])
+    t.lexer.skip(1)
 
-    def generateTokens(self, text):
-        self.lexer.input(text)
-        tokens = []
-        # Tokenize
-        while True:
-            tok = self.lexer.token()
-            if not tok:
-                break  # No more input
-            tokens.append(tok)
-        return tokens
+# Reserved keywords
+keywords = (
+    'INT',
+    'FLOAT',
+    'RETURN',
+    'DO',
+    'WHILE',
+    'FOR',
+    'IF',
+    'ELSE',
+    'SWITCH',
+    'CASE',
+    'BREAK',
+    'DEFAULT',
+)
 
-    def reset_lineno(self):
-        """ Resets the internal line number counter of the lexer.
-        """
-        self.lexer.lineno = 1
+keyword_map = {}
+for keyword in keywords:
+    keyword_map[keyword.lower()] = keyword
 
+# List of token names.
+tokens = keywords + (
+    # Identifiers
+    'ID',
 
-    # Error handling rule
-    def t_error(self, t):
-        print("Illegal character '%s'" % t.value[0])
-        t.lexer.skip(1)
+    # Types
+    # 'INTTYPE', 'FLOATTYPE' # already in keywords
 
-    # Reserved keywords
-    keywords = (
-        'INT',
-        'FLOAT',
-        'RETURN',
-        'DO',
-        'WHILE',
-        'FOR',
-        'IF',
-        'ELSE',
-        'SWITCH',
-        'CASE',
-        'BREAK',
-        'DEFAULT',
-    )
+    # Unary operator
+    # 'UNOP',
 
-    keyword_map = {}
+    # Operatiors
+    'PLUS', 'MINUS', 'TIMES', 'DIVIDE',
+    'LT', 'LE', 'GT', 'GE', 'EQ', 'NE',
 
-    # List of token names.
-    tokens = keywords + (
-        # Identifiers
-        'ID',
+    'ASSIGN',
 
-        # Types
-        # 'INTTYPE', 'FLOATTYPE' # already in keywords
+    # Deliminartors
+    'LPAREN', 'RPAREN',
+    'LBRACE', 'RBRACE',
+    'LBRACKET', 'RBRACKET',
+    'COMMA',
+    'SEMI',
+    'COLON',
 
-        # Unary operator
-        'UNOP',
+    # Constants
+    'INTNUM', 'FLOATNUM',
+)
 
-        # Operatiors
-        'PLUS', 'MINUS', 'TIMES', 'DIVIDE',
-        'LT', 'LE', 'GT', 'GE', 'EQ', 'NE',
+# Ignore space and tabs and newline
+t_ignore = ' \t'
 
-        'ASSIGN',
+t_PLUS   = r'\+'
+t_MINUS  = r'-'
+t_TIMES  = r'\*'
+t_DIVIDE = r'/'
 
-        # Deliminartors
-        'LPAREN', 'RPAREN',
-        'LBRACE', 'RBRACE',
-        'LBRACKET', 'RBRACKET',
-        'COMMA',
-        'SEMI',
-        'COLON',
+t_LT = r'<'
+t_GT = r'>'
+t_LE = r'<='
+t_GE = r'>='
+t_EQ = r'=='
+t_NE = r'!='
 
-        # Constants
-        'INTNUM', 'FLOATNUM',
-    )
+t_ASSIGN = r'='
 
-    # Ignore space and tabs
-    t_ignore = ' \t'
-
-    t_UNOP= r'-'
-
-    t_PLUS   = r'\+'
-    t_MINUS  = r'-'
-    t_TIMES  = r'\*'
-    t_DIVIDE = r'/'
-
-    t_LT = r'<'
-    t_GT = r'>'
-    t_LE = r'<='
-    t_GE = r'>='
-    t_EQ = r'=='
-    t_NE = r'!='
-
-    t_ASSIGN = r'='
-
-    # Delimeters
-    t_LPAREN = r'\('
-    t_RPAREN = r'\)'
-    t_LBRACE = r'{'
-    t_RBRACE = r'}'
-    t_LBRACKET = r'\['
-    t_RBRACKET = r'\]'
+# Delimeters
+t_LPAREN = r'\('
+t_RPAREN = r'\)'
+t_LBRACE = r'{'
+t_RBRACE = r'}'
+t_LBRACKET = r'\['
+t_RBRACKET = r'\]'
 
 
-    t_COMMA = r','
-    t_SEMI = r';'
-    t_COLON = r':'
+t_COMMA = r','
+t_SEMI = r';'
+t_COLON = r':'
 
-    def t_INTNUM(self, t):
-        r'[0-9]+'
-        t.value = int(t.value)
-        return t
+def t_FLOATNUM(t):
+    r'[0-9]+\.[0-9]+'
+    t.value = float(t.value)
+    return t
 
-    def t_FLOATNUM(self, t):
-        r'[0-9]+\.[0-9]+'
-        t.value = float(t.value)
-        return t
+def t_INTNUM(t):
+    r'[0-9]+'
+    t.value = int(t.value)
+    return t
 
-    def t_ID(self, t):
-        r'[A-Za-z][A-Za-z0-9_]*'
-        t.type = self.keyword_map.get(t.value, "ID")
-        # if t.type == 'ID' and self.type_lookup_func(t.value):
-        #     t.type = "TYPEID"
-        return t
+def t_ID(t):
+    r'[A-Za-z][A-Za-z0-9_]*'
+    t.type = keyword_map.get(t.value, "ID")
+    # if t.type == 'ID' and self.type_lookup_func(t.value):
+    #     t.type = "TYPEID"
+    return t
 
-    # Define a rule so we can track line numbers
-    def t_newline(self, t):
-        r'\n+'
-        t.lexer.lineno += len(t.value)
 
+
+
+
+
+
+# Build lexer
+lexer = lex.lex()
