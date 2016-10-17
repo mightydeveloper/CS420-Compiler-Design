@@ -4,7 +4,7 @@
 
 import ply.yacc as yacc
 from lexer import tokens
-
+import logging
 
 # Error rule for syntax errors
 def p_error(p):
@@ -227,6 +227,13 @@ precedence = (
     ('left', 'FUNC'),                       # Function call
 )
 
+# logging.basicConfig(
+#     level = logging.DEBUG,
+#     filename = "parselog.txt",
+#     filemode = "w",
+#     format = "%(filename)10s:%(lineno)4d:%(message)s"
+# )
+# log = logging.getLogger()
 
 # Build the parser
-parser = yacc.yacc(start='program')
+parser = yacc.yacc(start='program', debug=True)

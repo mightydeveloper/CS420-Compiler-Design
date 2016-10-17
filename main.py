@@ -2,6 +2,7 @@
 from lexer import lexer
 from parser import parser
 import sys, getopt
+import logging
 
 
 __author__ = 'Young Seok Kim'
@@ -19,7 +20,14 @@ def testLexer(lexer, read_data):
 
 
 def testParser(parser, read_data):
-    result = parser.parse(read_data, tracking=True)
+    logging.basicConfig(
+        level=logging.DEBUG,
+        filename="parselog.txt",
+        filemode="w",
+        format="%(filename)10s:%(lineno)4d:%(message)s"
+    )
+    log = logging.getLogger()
+    result = parser.parse(read_data, tracking=True, debug=log)
     return result
 
 # #files = ["samjo_example0.c"]
@@ -69,4 +77,4 @@ for option, filename in myopts:
         with open(filename) as f:
             read_data = f.read()
             testParser(parser, read_data)
-            print("parsing done! If there is no output so far, there is no syntax error")
+            print("parsing done!")

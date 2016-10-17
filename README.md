@@ -17,7 +17,7 @@
 ### Usage
     ```sh
     $ python main.py -l testfile.c # Lexer test (prints lexer tokens)
-    $ python main.py -p testfile.c # Parser test (prints nothing if successful. Except last successful message)
+    $ python main.py -p testfile.c # Parser test (prints state, stack, and action in 퍟parselog.txt)
     ```
 
 
