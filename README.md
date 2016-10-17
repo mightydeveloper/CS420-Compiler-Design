@@ -8,7 +8,7 @@
 - External Library : ply 3.9 [http://www.dabeaz.com/ply/ply-3.9.tar.gz]
 
 ### Included files
-    `lexer.py`, `parser.py`, `main.py`, `parser.out`, `README.md`
+`lexer.py`, `parser.py`, `main.py`, `parser.out`, `README.md`
 
 ### Prerequisites
 - Install python 3
