@@ -1,7 +1,8 @@
 #!/usr/bin/python
 from lexer import lexer
 from parser import parser
-import sys, getopt
+import sys
+import getopt
 import logging
 
 
@@ -76,5 +77,7 @@ for option, filename in myopts:
     elif option == '-p':
         with open(filename) as f:
             read_data = f.read()
-            testParser(parser, read_data)
+            result = testParser(parser, read_data)
+            print("Now printing ASTs")
+            print(result.printast())
             print("parsing done!")
