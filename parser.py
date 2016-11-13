@@ -41,7 +41,6 @@ def p_decllist(p):
     """ decllist : declaration
                  | decllist declaration
     """
-    # TODO : not sure if p[1] will be evaluated first
     if len(p) == 2:
         p[0] = AST.DecList()
         p[0].add_decl(p[1])
@@ -54,7 +53,6 @@ def p_funclist(p):
     """ funclist : function
                  | funclist function
     """
-    # TODO : not sure if p[1] will be evaluated first
     if len(p) == 2:
         p[0] = AST.FuncList()
         p[0].add_function(p[1])
