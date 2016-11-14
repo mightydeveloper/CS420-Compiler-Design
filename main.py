@@ -4,7 +4,7 @@ from parser import parser
 import sys
 import getopt
 import logging
-from SymbolTable import SymbolTable
+from SymbolTable import *
 
 
 __author__ = 'Young Seok Kim'
@@ -81,6 +81,9 @@ for option, filename in myopts:
             result = testParser(parser, read_data)
             with open('tree.txt', 'w') as ASTf:
                 ASTf.write(result.printast())
+            with open('table.txt', 'w') as Tablef:
+                tableresult = generate_symbol_table(result)
+                Tablef.write(tableresult)
             print("parsing done!")
 
         # with open(filename) as f:

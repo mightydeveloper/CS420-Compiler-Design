@@ -34,21 +34,31 @@ class SymbolTable(object):
         self.add_entry("int", "var4", None, "variable")
         self.add_entry("float", "var5", 10, "variable")
 
-    def add_declList(self, p):
+    def add_decllist(self, p):
         for decl in p.declarations:
             symtype = decl.type
             for iden in decl.identlist.identifiers:
                 if iden.idtype == 'array':
-                    self.add_entry(symtype, iden.id, iden.intnum, "variable")
+                    self.add_entry(symtype.printast(), iden.id, iden.intnum, "variable")
                 else:
-                    self.add_entry(symtype, iden.id, None, "variable")
+                    self.add_entry(symtype.printast(), iden.id, None, "variable")
 
 
 
 
 # p should be given as program node
 def generate_symbol_table(p):
-    gTable = SymbolTable("GLOBAL")
+    tables = []
+    gTable = SymbolTable("GLOBAL")          # This is the Global symbol table
+    gTable.add_decllist(p.DecList)
+    tables.append(gTable)
+
+    # Make output string
+    outputstr = ""
+    for tb in tables:
+        outputstr += str(tb) + "\n"
+    return outputstr
+
 
 
 
