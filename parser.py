@@ -154,10 +154,24 @@ def p_stmt(p):
              | compoundstmt
              | SEMI
     """
-    if p[1] == ";":
-        p[0] = AST.Semi()
+    if (isinstance(p[1], AST.AssignStmt)):
+        p[0] = AST.Stmt("assignstmt", p[1])
+    elif (isinstance(p[1], AST.CallStmt)):
+        p[0] = AST.Stmt("callstmt", p[1])
+    elif (isinstance(p[1], AST.RetStmt)):
+        p[0] = AST.Stmt("retstmt", p[1])
+    elif (isinstance(p[1], AST.WhileStmt)):
+        p[0] = AST.Stmt("whilestmt", p[1])
+    elif (isinstance(p[1], AST.ForStmt)):
+        p[0] = AST.Stmt("forstmt", p[1])
+    elif (isinstance(p[1], AST.IfStmt)):
+        p[0] = AST.Stmt("ifstmt", p[1])
+    elif (isinstance(p[1], AST.SwitchStmt)):
+        p[0] = AST.Stmt("switchstmt", p[1])
+    elif (isinstance(p[1], AST.CompoundStmt)):
+        p[0] = AST.Stmt("compoundstmt", p[1])
     else:
-        p[0] = p[1]
+        p[0] = AST.Stmt("SEMI", p[1])
 
 
 def p_assignstmt(p):

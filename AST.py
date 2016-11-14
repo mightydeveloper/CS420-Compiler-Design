@@ -275,13 +275,21 @@ class StmtList(Node):
         return "\n".join(l)
 
 
-# class Stmt(Node):
-#     def __init__(self, stmttype, stmt):
-#         self.stmttype = stmttype
-#         # This stmttype value is either
-#         # "assignStmt", "callStmt", "retStmt", "whileStmt",
-#         # "forStmt", "ifStmt", "switchStmt", "compoundStmt", or ";"
-#         self.stmt = stmt
+class Stmt(Node):
+    def __init__(self, stmttype, stmt):
+        self.stmttype = stmttype
+        # This stmttype value is either
+        # "assignStmt", "callStmt", "retStmt", "whileStmt",
+        # "forStmt", "ifStmt", "switchStmt", "compoundStmt", or "SEMI"
+        self.stmt = stmt
+
+    def printast(self):
+        outputstr = ""
+        if self.stmttype == "SEMI":
+            outputstr += ";"
+        else:
+            outputstr += self.stmt.printast()
+        return outputstr
 
 
 class AssignStmt(Node):
