@@ -30,9 +30,9 @@ I used same environment as Project 1 except Python language is now 3.5.2
 ### Prerequisites
 - Install python 3
 - Install ply 3.9
--
+
 ### Usage
 ```sh
-$ python main.py -p testfile.c # Parser test (This will generate tree.txt AST output)
+$ python main.py -p testfile.c # Parser test (This will generate `tree.txt` as AST output, and also `table.txt` as symbol table)
 ```
 
