@@ -1,0 +1,32 @@
+This directory has the T interpreter source, executable, interactive Tdebugger and oher documents
+
+src	: T interpreter source directory
+doc     : T language definition and comments
+tdb     : T debugger directory
+example	: T example programs
+cost*   : example cost description files
+
+Usage 	: T [-ps] filename1 [filename2]
+	     -p    : show parsing information 
+	     -s    : show statistics
+	     filename1 : program in T
+	     filename2 : cost description file 
+
+----------
+Cost description file has several lines, each of which describes cost 
+of each memory area (register, stack, heap, etc. that you named).
+For example,
+
+R 1 1 21
+S 1 3 
+H 1 2
+
+mean that 
+memory area named "R" has read cost 1, write cost 1, and has 21 cells,
+memory area named "S" has read cost 1, write cost 3, and has no limit in size,
+memory area named "H" has read cost 1, write cost 2, and has no limit in size.
+
+
+
+
+

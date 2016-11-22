@@ -1,0 +1,22 @@
+
+	AREA	A
+	AREA	S
+
+LAB		START
+
+	MOVE	30000		A
+	MOVE	0		S
+
+LAB		LOOP
+
+	ADD		S@	A@	S
+	SUB		A@	1	A
+	JMPZ	A@  EXIT
+	JMP		LOOP
+
+LAB		EXIT
+
+	WRITE  "SUM::"
+	WRITE	S@
+
+LAB		END
