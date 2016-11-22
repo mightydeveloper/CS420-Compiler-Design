@@ -21,9 +21,9 @@ LAB		LOOPCOL
 	ADD		R(4)@	R(2)@ 	R(4)	// R4 = R4 + J
 	DIV		R(4)@	R(0)@	R(3)	// R3 = R4 / N
 	MUL		R(3)@	R(0)@	R(3)	// R3 = R3 * N
-	SUB		R(4)@	R(3)@	R(7)	// R7 = R4 - R3 = (I+2J-2) mod N
-	ADD 	R(6)@	R(7)@	R(3)	// R3 = R6 + R7
-	ADD 	R(3)@	1		R(4)	// R8 = R3 + 1
+	SUB		R(4)@	R(3)@	R(5)	// R5 = R4 - R3 = (I+2J-2) mod N
+	ADD 	R(6)@	R(5)@	R(3)	// R3 = R6 + R5
+	ADD 	R(3)@	1		R(4)	// R4 = R3 + 1
 	
 	WRITE	R(4)@
 
