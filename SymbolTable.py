@@ -15,6 +15,14 @@ class SymbolTable(object):
     def add_entry(self, symtype, name, array, role, linepos):
         self.table.append((symtype, name, array, role, linepos))
 
+    def add_entry_with_shadowing(self, entry):
+        symtype, name, array, role, linepos = entry
+        for (_symtype, _name, _array, _role, _linepos) in self.table:
+            if _name == name:
+                self.table.remove((_symtype, _name, _array, _role, _linepos))
+                break
+        self.table.append((symtype, name, array, role, linepos))
+
     def __str__(self):
         if len(self.table) == 0:
             return ""
@@ -57,6 +65,29 @@ class SymbolTable(object):
                 self.add_entry(paramType.printast(), paramIden.id, None, "parameter", paramIden.line_position)
 
 
+# Helper function for 'find_all_variables(scope, all_symbol_tables)'
+def find_symbol_table(scope_name, tables):
+    for table in tables:
+        if table.name == scope_name:
+            return table
+
+
+# scope: string, all_symbol_tables: [SymbolTables]
+# returns a single Symbol table having all the variables in that scope
+def find_all_variables(scope, all_symbol_tables):
+    scopes = scope.split(" - ")
+    scope_sym_table = SymbolTable("(cumulative)"+scope)
+    # copy GLOBAL Symbol table
+    gTable = find_symbol_table("GLOBAL", all_symbol_tables)
+    for entry in gTable.table:
+        scope_sym_table.add_entry_with_shadowing(entry)
+    # copy rest of the scopes
+    for i in range(len(scopes)):
+        name = " - ".join(scopes[:i+1])     # from 0 th ith, inclusive
+        found_table = find_symbol_table(name, all_symbol_tables)
+        for entry in found_table.table:
+            scope_sym_table.add_entry_with_shadowing(entry)
+    return scope_sym_table
 
 
 # p should be given as program node
@@ -73,15 +104,9 @@ def generate_symbol_table(p):
         fTable.add_paramList(function.params)
         tables.append(fTable)
         tables += make_tables_for_compoundStmt(function.comoundstmt, str(function.id), topTable=fTable)
-        gTable.funcTables[str(function.id)] = gTable
+        gTable.funcTables[str(function.id)] = fTable
 
-    # Make output string
-    outputstr = ""
-    for tb in tables:
-        if len(tb.table) == 0:
-            continue
-        outputstr += str(tb) + "\n"
-    return outputstr
+    return tables
 
 
 # if it is from function/if/while/for, give scope as function name,
@@ -93,7 +118,7 @@ def make_tables_for_compoundStmt(p, scope, count=None, topTable=None):
     if topTable is not None:
         topTable.add_decllist(p.declist)
     else: # normal case
-        scope += " - " + "compound(" + str(count) + ")"
+        scope += " - compound(" + str(count) + ")"
         cTable = SymbolTable(scope)
         cTable.add_decllist(p.declist)
         tables.append(cTable)
@@ -168,21 +193,23 @@ def make_tables_for_ifstmt(p, scope, count):
     tables = []
     scope += " - if("+str(count)+")"
     # If
+    if_scope = scope+"(if)"
     if p.thenstmt.stmttype == "compoundstmt":
-        ifTable = SymbolTable(scope+"(if)")
+        ifTable = SymbolTable(if_scope)
         tables.append(ifTable)
-        tables += make_tables_for_compoundStmt(p.thenstmt.stmt, scope, topTable=ifTable)
+        tables += make_tables_for_compoundStmt(p.thenstmt.stmt, if_scope, topTable=ifTable)
     else:
-        tables += make_tables_for_stmt(p.thenstmt, scope)
+        tables += make_tables_for_stmt(p.thenstmt, if_scope)
 
     # Else
+    else_scope = scope+"(else)"
     if p.elsestmt is not None:
         if p.elsestmt.stmttype == "compoundstmt":
-            elseTable = SymbolTable(scope+"(else)")
+            elseTable = SymbolTable(else_scope)
             tables.append(elseTable)
-            tables += make_tables_for_compoundStmt(p.elsestmt.stmt, scope, topTable=elseTable)
+            tables += make_tables_for_compoundStmt(p.elsestmt.stmt, else_scope, topTable=elseTable)
         else:
-            tables += make_tables_for_stmt(p.elsestmt, scope)
+            tables += make_tables_for_stmt(p.elsestmt, else_scope)
 
     return tables
 

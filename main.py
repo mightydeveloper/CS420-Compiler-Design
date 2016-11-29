@@ -82,8 +82,16 @@ for option, filename in myopts:
             with open('tree.txt', 'w') as ASTf:
                 ASTf.write(result.printast())
             with open('table.txt', 'w') as Tablef:
-                tableresult = generate_symbol_table(result)
-                Tablef.write(tableresult)
+                tables = generate_symbol_table(result)
+                # Make output string from symbol table list
+                outputstr = ""
+                for tb in tables:
+                    if len(tb.table) == 0:
+                        continue
+                    outputstr += str(tb) + "\n"
+                # Write table information string to the table.txt file
+                Tablef.write(outputstr)
+
             print("parsing done!")
 
         # with open(filename) as f:
