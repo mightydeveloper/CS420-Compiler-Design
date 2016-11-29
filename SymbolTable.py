@@ -65,6 +65,7 @@ def generate_symbol_table(p):
     gTable = SymbolTable("GLOBAL")          # This is the Global symbol table
     gTable.add_decllist(p.DecList)
     tables.append(gTable)
+    gTable.funcTables = {}     # function name to SymbolTable object mapping (dictionary)
 
     for function in p.FuncList.functions:
         gTable.add_entry("function", str(function.id), None, "function", function.line_position)
@@ -72,6 +73,7 @@ def generate_symbol_table(p):
         fTable.add_paramList(function.params)
         tables.append(fTable)
         tables += make_tables_for_compoundStmt(function.comoundstmt, str(function.id), topTable=fTable)
+        gTable.funcTables[str(function.id)] = gTable
 
     # Make output string
     outputstr = ""
