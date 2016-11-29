@@ -34,11 +34,6 @@ class SymbolTable(object):
             count += 1
         return outputstr
 
-    def test(self):
-        self.add_entry("int", "in", None, "parameter")
-        self.add_entry("int", "var4", None, "variable")
-        self.add_entry("float", "var5", 10, "variable")
-
     # The node p should be given as DecList node
     def add_decllist(self, p):
         if p is None:
@@ -72,6 +67,7 @@ def generate_symbol_table(p):
     tables.append(gTable)
 
     for function in p.FuncList.functions:
+        gTable.add_entry("function", str(function.id), None, "function", function.line_position)
         fTable = SymbolTable(str(function.id))
         fTable.add_paramList(function.params)
         tables.append(fTable)
