@@ -12,8 +12,8 @@ class SymbolTable(object):
         self.name = name
         self.table = []
 
-    def add_entry(self, symtype, name, array, role):
-        self.table.append((symtype, name, array, role))
+    def add_entry(self, symtype, name, array, role, linepos):
+        self.table.append((symtype, name, array, role, linepos))
 
     def __str__(self):
         if len(self.table) == 0:
@@ -21,13 +21,16 @@ class SymbolTable(object):
         outputstr = ""
         count = 1
         outputstr += "Function name : "+self.name+"\n"
-        outputstr += "{:>5} {:>8}  {:>25}  {:>7}  {:>13}\n".format("count", "Type", "name", "array", "role")
-        for (symtype, name, array, role) in self.table:
+        outputstr += "{:>5} {:>8}  {:>25}  {:>7}  {:>13}  {:>4} {:>4}\n".format(
+            "count", "Type", "name", "array", "role", "line", "position")
+        for (symtype, name, array, role, linepos) in self.table:
+            line, pos = linepos
             if array is None:
                 array = ""
             else:
                 array = str(array)
-            outputstr += "{:>5} {:>8}  {:>25}  {:>7}  {:>13}\n".format(count, symtype, name, array, role)
+            outputstr += "{:>5} {:>8}  {:>25}  {:>7}  {:>13}  {:>4} {:>4}\n".format(
+                         count, symtype, name, array, role, line, pos)
             count += 1
         return outputstr
 
@@ -44,9 +47,9 @@ class SymbolTable(object):
             symtype = decl.type
             for iden in decl.identlist.identifiers:
                 if iden.idtype == 'array':
-                    self.add_entry(symtype.printast(), iden.id, iden.intnum, "variable")
+                    self.add_entry(symtype.printast(), iden.id, iden.intnum, "variable", iden.line_position)
                 else:
-                    self.add_entry(symtype.printast(), iden.id, None, "variable")
+                    self.add_entry(symtype.printast(), iden.id, None, "variable", iden.line_position)
 
     # The node p should be given as ParamList node
     def add_paramList(self, p):
@@ -54,9 +57,9 @@ class SymbolTable(object):
             return
         for (paramType, paramIden) in p.paramlist:
             if paramIden.idtype == 'array':
-                self.add_entry(paramType.printast(), paramIden.id, paramIden.intnum, "parameter")
+                self.add_entry(paramType.printast(), paramIden.id, paramIden.intnum, "parameter", paramIden.line_position)
             else:
-                self.add_entry(paramType.printast(), paramIden.id, None, "parameter")
+                self.add_entry(paramType.printast(), paramIden.id, None, "parameter", paramIden.line_position)
 
 
 

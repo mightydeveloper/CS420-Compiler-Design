@@ -35,6 +35,7 @@ def p_program(p):
             p[0] = AST.Program(None, p[1])
         else:
             p[0] = AST.Program()
+    p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
 
 
 def p_decllist(p):
@@ -47,6 +48,7 @@ def p_decllist(p):
     else:
         p[1].add_decl(p[2])
         p[0] = p[1]
+    p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
 
 
 def p_funclist(p):
@@ -59,12 +61,14 @@ def p_funclist(p):
     else:
         p[1].add_function(p[2])
         p[0] = p[1]
+    p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
 
 
 def p_declaration(p):
     """ declaration : type identlist SEMI
     """
     p[0] = AST.Declaration(p[1], p[2])
+    p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
 
 
 def p_identlist(p):
@@ -76,6 +80,7 @@ def p_identlist(p):
     else:
         p[1].add_identifier(p[3])
         p[0] = p[1]
+    p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
 
 
 def p_identifier(p):
@@ -86,6 +91,7 @@ def p_identifier(p):
         p[0] = AST.Identifier(p[1])
     else:
         p[0] = AST.Identifier(p[1], p[3], idtype="array")
+    p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
 
 
 def p_function(p):
@@ -96,6 +102,7 @@ def p_function(p):
         p[0] = AST.Function(p[1], p[2], p[5])
     else:
         p[0] = AST.Function(p[1], p[2], p[6], p[4])
+    p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
 
 
 def p_paramlist(p):
@@ -108,6 +115,7 @@ def p_paramlist(p):
     else:
         p[1].addparam(p[3], p[4])
         p[0] = p[1]
+    p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
 
 
 def p_type(p):
@@ -120,6 +128,7 @@ def p_type(p):
         p[0] = AST.Type("FLOAT")
     else:
         print("Error in p_type!!!")
+    p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
 
 
 def p_compoundstmt(p):
@@ -130,6 +139,7 @@ def p_compoundstmt(p):
         p[0] = AST.CompoundStmt(p[3], p[2])
     else:
         p[0] = AST.CompoundStmt(p[2])
+    p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
 
 
 def p_stmtlist(p):
@@ -141,6 +151,7 @@ def p_stmtlist(p):
         p[0] = p[1]
     else:
         p[0] = AST.StmtList()
+    p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
 
 
 def p_stmt(p):
@@ -172,12 +183,14 @@ def p_stmt(p):
         p[0] = AST.Stmt("compoundstmt", p[1])
     else:
         p[0] = AST.Stmt("SEMI", p[1])
+    p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
 
 
 def p_assignstmt(p):
     """ assignstmt : assign SEMI
     """
     p[0] = AST.AssignStmt(p[1])
+    p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
 
 
 def p_assign(p):
@@ -188,12 +201,14 @@ def p_assign(p):
         p[0] = AST.Assign("array", p[1], p[6], leval=p[3])
     else:
         p[0] = AST.Assign("non-array", p[1], p[3])
+    p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
 
 
 def p_callstmt(p):
     """ callstmt : call SEMI
     """
     p[0] = AST.CallStmt(p[1])
+    p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
 
 
 def p_call(p):
@@ -204,6 +219,7 @@ def p_call(p):
         p[0] = AST.Call(p[1], p[3])
     else:
         p[0] = AST.Call(p[1])
+    p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
 
 
 def p_retstmt(p):
@@ -214,6 +230,7 @@ def p_retstmt(p):
         p[0] = AST.RetStmt(p[2])
     else:
         p[0] = AST.RetStmt()
+    p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
 
 
 def p_whilestmt(p):
@@ -224,12 +241,14 @@ def p_whilestmt(p):
         p[0] = AST.WhileStmt("while", p[3], p[5])
     else:
         p[0] = AST.WhileStmt("dowhile", p[5], p[2])
+    p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
 
 
 def p_forstmt(p):
     """ forstmt : FOR LPAREN assign SEMI expr SEMI assign RPAREN stmt
     """
     p[0] = AST.ForStmt(p[3], p[5], p[7], p[9])
+    p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
 
 
 def p_ifstmt(p):
@@ -240,18 +259,21 @@ def p_ifstmt(p):
         p[0] = AST.IfStmt(p[3], p[5])
     else:
         p[0] = AST.IfStmt(p[3], p[5], p[7])
+    p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
 
 
 def p_switchstmt(p):
     """ switchstmt : SWITCH LPAREN identifier RPAREN LBRACE caselist RBRACE
     """
     p[0] = AST.SwitchStmt(p[3], p[6])
+    p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
 
 
 def p_caselist(p):
     """ caselist : case default
     """
     p[0] = AST.CaseList(p[1], p[2])
+    p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
 
 
 def p_case(p):
@@ -267,6 +289,7 @@ def p_case(p):
         p[0] = p[1]
     else:
         p[0] = AST.Case()
+    p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
 
 
 def p_default(p):
@@ -280,6 +303,7 @@ def p_default(p):
         p[0] = AST.CaseDefault(p[3])
     else:
         p[0] = None
+    p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
 
 
 def p_expr(p):
@@ -319,12 +343,14 @@ def p_expr(p):
             p[0] = AST.Expr("floatnum", operand1=p[1])
         else: # ID case
             p[0] = AST.Expr("id", operand1=p[1])
+    p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
 
 
 def p_unop(p):
     """ unop : MINUS
     """
     p[0] = p[1]
+    p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
 
 # def p_binop(p):
 #     """ binop : PLUS
@@ -349,6 +375,7 @@ def p_arglist(p):
     else:
         p[1].addarg(p[3])
         p[0] = p[1]
+    p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
 
 
 # Within the precedence declaration, tokens are ordered from lowest to highest precedence

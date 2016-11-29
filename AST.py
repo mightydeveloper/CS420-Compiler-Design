@@ -7,7 +7,9 @@ debugNode = False
 class Node(object):
     def printast(self):
         return "NOT IMPLEMENTED!"
-    pass
+
+    def insertLineNumInfo(self, linenumber, position):
+        self.line_position = (linenumber, position)
 
 
 class Program(Node):
