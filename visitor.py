@@ -165,7 +165,7 @@ def visit_expr(p: Expr, scope, tables):
 def visit_call(p: Call, scope, tables):
     func = find_function(str(p.id), tables)
     if func is None:
-        ErrorCollector.error("called undefined function %d" % str(p.id), p.line_position)
+        ErrorCollector.error("called undefined function %s" % str(p.id), p.line_position)
         p.set_return_type('')
         return
 
