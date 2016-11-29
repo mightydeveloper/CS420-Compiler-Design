@@ -11,6 +11,8 @@ class Node(object):
     def insertLineNumInfo(self, linenumber, position):
         self.line_position = (linenumber, position)
 
+    def position(self):
+        return "Line %d, Column %d" % self.line_position
 
 class Program(Node):
     def __init__(self, declist=None, funclist=None):
@@ -362,6 +364,15 @@ class Call(Node):
         outputstr += ")"
         return outputstr
 
+    def return_type(self):
+        if hasattr(self, '__return_type'):
+            return self.__return_type
+        else:
+            return None
+
+    def set_return_type(self, return_type):
+        self.__return_type = return_type
+
 
 class RetStmt(Node):
     def __init__(self, expr=None):
@@ -606,6 +617,15 @@ class Expr(Node):
             return "("+self.operand1.printast()+")"
         else:  # intnum/floatnum case
             return str(self.operand1)
+
+    def return_type(self):
+        if hasattr(self, '_return_type'):
+            return self._return_type
+        else:
+            return None
+
+    def set_return_type(self, return_type):
+        setattr(self, '_return_type', return_type)
 
 
 class ArgList(Node):

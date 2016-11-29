@@ -37,6 +37,14 @@ class SymbolTable(object):
                 array = ""
             else:
                 array = str(array)
+
+            print("-----------")
+            print(symtype)
+            print(name)
+            print(array)
+            print(role)
+            print(line)
+            print(pos)
             outputstr += "{:>5} {:>8}  {:>25}  {:>7}  {:>13}  {:>4} {:>4}\n".format(
                          count, symtype, name, array, role, line, pos)
             count += 1
@@ -85,10 +93,26 @@ def find_all_variables(scope, all_symbol_tables):
     for i in range(len(scopes)):
         name = " - ".join(scopes[:i+1])     # from 0 th ith, inclusive
         found_table = find_symbol_table(name, all_symbol_tables)
+        if found_table is None:
+            continue # TODO found table must not be None
         for entry in found_table.table:
             scope_sym_table.add_entry_with_shadowing(entry)
     return scope_sym_table
 
+
+def find_function(name, all_symbol_tables) -> AST.Function:
+    gTable = find_symbol_table('GLOBAL', all_symbol_tables)
+    if name in gTable.funcTables:
+        return gTable.funcTables[name]
+    else:
+        return None
+
+
+def find_symbol(name, symbol_table):
+    for entry in symbol_table.table:
+        if entry[1] == name:
+            return entry
+    return None
 
 # p should be given as program node
 def generate_symbol_table(p):
@@ -99,12 +123,12 @@ def generate_symbol_table(p):
     gTable.funcTables = {}     # function name to SymbolTable object mapping (dictionary)
 
     for function in p.FuncList.functions:
-        gTable.add_entry("function", str(function.id), None, "function", function.line_position)
+        gTable.add_entry(function.type.type, str(function.id), None, "function", function.line_position)
         fTable = SymbolTable(str(function.id))
         fTable.add_paramList(function.params)
         tables.append(fTable)
         tables += make_tables_for_compoundStmt(function.comoundstmt, str(function.id), topTable=fTable)
-        gTable.funcTables[str(function.id)] = fTable
+        gTable.funcTables[str(function.id)] = function
 
     return tables
 
