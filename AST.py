@@ -660,13 +660,13 @@ class Semi(Node):
         return ";"
 
 
+class TypeCast(Node):
+    def __init__(self, expr: Expr, cast_type: str):
+        self.expr = expr
+        self.cast_type = cast_type
 
+    def printast(self):
+        return "((%s) %s)" % (self.cast_type, self.expr.printast())
 
-
-
-
-
-
-
-
-
+    def return_type(self):
+        return self.cast_type

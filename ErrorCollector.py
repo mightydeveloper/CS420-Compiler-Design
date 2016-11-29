@@ -7,10 +7,6 @@ class ErrorInfo(object):
 		self.position = position
 
 
-def report(message):
-	Errors.append(message)
-
-
 def warn(message, position):
 	format_error('Warning', message, position)
 
@@ -40,3 +36,10 @@ def inspect(input_data):
 			col_no = find_column(input_data, lexpos)
 			print("%s: %s at Line %d, Column %d" % \
 				(error.level, error.message, line_no, col_no))
+
+
+def has_error():
+	for error in Errors:
+		if error.level == 'Error':
+			return True
+	return False

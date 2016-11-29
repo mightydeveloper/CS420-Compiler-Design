@@ -83,9 +83,11 @@ def visit_retstmt(p: RetStmt, scope, tables):
     visit_expr(p.expr, scope, tables)
     func_name = scope.split(' - ')[0]
     func = find_function(func_name, tables)
+    func_type = func.type.type.lower()
 
-    if func.type.type.lower() != p.expr.return_type():
+    if func_type != p.expr.return_type():
         ErrorCollector.warn("return type of %s mismatch" % func_name, p.line_position)
+        p.expr = TypeCast(p.expr, func_type)
 
 
 def visit_expr(p: Expr, scope, tables):
@@ -105,7 +107,12 @@ def visit_expr(p: Expr, scope, tables):
 
             if p.operand2.return_type() != "float":
                 warn_pos = p.operand2.line_position
+                p.operand2 = TypeCast(p.operand2, "float")
+            elif p.operand1.return_type() != "float":
+                warn_pos = p.operand1.line_position
+                p.operand1 = TypeCast(p.operand1, "float")
             else:
+                # Type mismatch may caused by undefined variable
                 warn_pos = p.operand1.line_position
 
             ErrorCollector.warn("binop operand type mismatch "+ a + " & " + b, warn_pos)
@@ -134,13 +141,14 @@ def visit_expr(p: Expr, scope, tables):
         table = find_all_variables(scope, tables)
         entry = find_symbol(p.idval, table)
         if entry is None:
-            ErrorCollector.report("symbol not declared: " + str(p.idval), p.line_position)
+            ErrorCollector.error("symbol not declared: " + str(p.idval), p.line_position)
             p.set_return_type('')
         else:
             p.set_return_type(entry[0])
         visit_expr(p.idIDX, scope, tables)
         if p.idIDX.return_type() != "int":
             ErrorCollector.warn("array index is not integer type", p.line_position)
+            p.idIDX = TypeCast(p.idIDX, "int")
     elif p_type == "intnum":
         p.set_return_type("int")
     elif p_type == "floatnum":
@@ -170,10 +178,12 @@ def visit_call(p: Call, scope, tables):
         ErrorCollector.error("called " + str(func.id) + " with wrong number of arguments", p.line_position)
         return
 
-    for (arg, param) in itertools.zip_longest(p.arglist.args, func.params.paramlist):
+    for (index, (arg, param)) in enumerate(itertools.zip_longest(p.arglist.args, func.params.paramlist)):
         visit_expr(arg, scope, tables)
         if arg.return_type() != param[0].type.lower():
             ErrorCollector.warn("call parameter type mismatch", arg.line_position)
+            p.arglist.args[index] = TypeCast(arg, param[0].type.lower())
+
 
 
 def visit_assign(p: Assign, scope, tables):
@@ -187,8 +197,8 @@ def visit_assign(p: Assign, scope, tables):
     visit_expr(p.reval, scope, tables)
 
     if entry[0] != p.reval.return_type():
-        ErrorCollector.error("assignment value type mismatch " + entry[0] + " & " + p.reval.return_type(), p.line_position)
-
+        ErrorCollector.warn("assignment value type mismatch " + entry[0] + " & " + p.reval.return_type(), p.line_position)
+        p.reval = TypeCast(p.reval, entry[0])
     if p.assigntype == "non-array":
         if entry[2] is not None:
             ErrorCollector.error("Array access to non-array variable", p.line_position)
@@ -199,6 +209,7 @@ def visit_assign(p: Assign, scope, tables):
         visit_expr(p.leval, scope, tables)
         if p.leval.return_type() != "int":
             ErrorCollector.warn("array index is not integer type", p.line_position)
+            p.level = TypeCast(p.leval, "int")
 
 
 def visit_ifstmt(p: IfStmt, scope, tables, count):
@@ -207,6 +218,7 @@ def visit_ifstmt(p: IfStmt, scope, tables, count):
     visit_expr(p.conditionexpr, scope, tables)
     if p.conditionexpr.return_type() != "int":
         ErrorCollector.warn("If statement test expr return value is not integer", p.line_position)
+        p.conditionexpr = TypeCast(p.conditionexpr, "int")
 
     # If
     if_scope = scope + "(if)"
@@ -229,6 +241,7 @@ def visit_forstmt(p: ForStmt, scope, tables, count):
     visit_expr(p.conditionexpr, scope, tables)
     if p.conditionexpr.return_type() != "int":
         ErrorCollector.warn("For statement test expr return value is not integer", p.line_position)
+        p.conditionexpr = TypeCast(p.conditionexpr, "int")
 
     visit_assign(p.initial_assign, scope, tables)
     visit_assign(p.assign, scope, tables)
@@ -244,6 +257,7 @@ def visit_whilestmt(p: WhileStmt, scope, tables, count):
     visit_expr(p.conditionexpr, scope, tables)
     if p.conditionexpr.return_type() != "int":
         ErrorCollector.warn("While statement test expr return value is not integer", p.line_position)
+        p.conditionexpr = TypeCast(p.conditionexpr, "int")
 
     if p.repeatstmt.stmttype == "compoundstmt":
         visit_compoundStmt(p.repeatstmt.stmt, scope, tables)
@@ -261,7 +275,7 @@ def visit_switchstmt(p: SwitchStmt, scope, tables, count):
         ErrorCollector.error("symbol not declared: " + str(p.id.id), p.line_position)
     else:
         if entry[0] != "int":
-            ErrorCollector.warn("Switch identifier is not integer type", p.line_position)
+            ErrorCollector.error("Switch identifier is not integer type, cannot apply auto-cast", p.line_position)
 
         if entry[2] is None and p.id.idtype == "array":
             ErrorCollector.error("Array access to non-array variable at " + p.line_position)

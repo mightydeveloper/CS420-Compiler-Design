@@ -100,8 +100,6 @@ for option, filename in myopts:
         with open(filename) as f:
             read_data = f.read()
             result = testParser(parser, read_data)      # result is the root node
-            with open('tree.txt', 'w') as ASTf:
-                ASTf.write(result.printast())
             with open('table.txt', 'w') as Tablef:
                 tables = generate_symbol_table(result)
                 # Make output string from symbol table list
@@ -114,6 +112,10 @@ for option, filename in myopts:
                 Tablef.write(outputstr)
             visit_program(result, tables)
             ErrorCollector.inspect(read_data)
+            if not ErrorCollector.has_error():
+                with open('tree.txt', 'w') as ASTf:
+                    ASTf.write(result.printast())
+
 
 
         # with open(filename) as f:
