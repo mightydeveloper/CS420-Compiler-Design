@@ -113,8 +113,7 @@ for option, filename in myopts:
                 # Write table information string to the table.txt file
                 Tablef.write(outputstr)
             visit_program(result, tables)
-            for error in ErrorCollector.Errors:
-                print(error)
+            ErrorCollector.inspect(read_data)
 
 
         # with open(filename) as f:

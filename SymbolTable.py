@@ -16,7 +16,7 @@ class SymbolTable(object):
     def add_entry(self, symtype, name, array, role, linepos):
         for entry in self.table:
             if entry[1] == name:
-                ErrorCollector.report("Error: declaration conflict(%s) at %s" % (name, linepos))
+                ErrorCollector.error("declaration conflict(%s)" % name, linepos)
                 break
         self.table.append((symtype, name, array, role, linepos))
 
