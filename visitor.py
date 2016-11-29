@@ -9,6 +9,7 @@ import itertools
 from AST import *
 from SymbolTable import *
 import ErrorCollector
+import pdb
 
 
 def visit_program(p, tables):
@@ -83,7 +84,7 @@ def visit_retstmt(p: RetStmt, scope, tables):
     func_name = scope.split(' - ')[0]
     func = find_function(func_name, tables)
 
-    if func.type != p.expr.return_type():
+    if func.type.type.lower() != p.expr.return_type():
         ErrorCollector.report("return type mismatch at " + func_name + p.position())
 
 
@@ -96,13 +97,23 @@ def visit_expr(p: Expr, scope, tables):
     elif p_type == "binop":
         visit_expr(p.operand1, scope, tables)
         visit_expr(p.operand2, scope, tables)
-        if p.operand1.return_type() == p.operand2.return_type():
-            p.set_return_type(p.operand1.return_type())
-        else:
+
+
+        if p.operand1.return_type() != p.operand2.return_type():
             a = p.operand1.return_type()
             b = p.operand2.return_type()
-            ErrorCollector.report("binop operand type mismatch"+ a + " & " + b + " at " + p.position())
-            p.set_return_type("float")
+            ErrorCollector.report("binop operand type mismatch "+ a + " & " + b + " at " + p.position())
+
+            if p.operator in ['+', '-', '*', '/']:
+                p.set_return_type("float")
+            else:
+                p.set_return_type("int")
+        else:
+            if p.operator in ['+', '-', '*', '/']:
+                p.set_return_type(p.operand1.return_type())
+            else:
+                p.set_return_type("int")
+
             # TODO generate type conversion node
     elif p_type == "id":
         # TODO : change operand1 -> idval
@@ -144,7 +155,7 @@ def visit_call(p: Call, scope, tables):
         p.set_return_type('')
         return
 
-    p.set_return_type(func.type)
+    p.set_return_type(func.type.type.lower())
     if p.arglist is None and func.params is None:
         return
 
@@ -155,7 +166,7 @@ def visit_call(p: Call, scope, tables):
 
     for (arg, param) in itertools.zip_longest(p.arglist.args, func.params.paramlist):
         visit_expr(arg, scope, tables)
-        if arg.return_type != param[0]:
+        if arg.return_type() != param[0].type.lower():
             ErrorCollector.report("Call parameter type mismatch at " + arg.position())
 
 
@@ -170,9 +181,6 @@ def visit_assign(p: Assign, scope, tables):
     visit_expr(p.reval, scope, tables)
 
     if entry[0] != p.reval.return_type():
-        pppp = p
-        import pdb
-        pdb.set_trace()
         ErrorCollector.report("Assignment value type mismatch " + entry[0] + " & " + p.reval.return_type() + " at " + p.position())
 
     if p.assigntype == "non-array":

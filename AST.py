@@ -365,13 +365,13 @@ class Call(Node):
         return outputstr
 
     def return_type(self):
-        if hasattr(self, '__return_type'):
-            return self.__return_type
+        if hasattr(self, '_return_type'):
+            return self._return_type
         else:
             return None
 
     def set_return_type(self, return_type):
-        self.__return_type = return_type
+        setattr(self, '_return_type', return_type)
 
 
 class RetStmt(Node):

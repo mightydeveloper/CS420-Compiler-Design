@@ -38,13 +38,13 @@ class SymbolTable(object):
             else:
                 array = str(array)
 
-            print("-----------")
-            print(symtype)
-            print(name)
-            print(array)
-            print(role)
-            print(line)
-            print(pos)
+            # print("-----------")
+            # print(symtype)
+            # print(name)
+            # print(array)
+            # print(role)
+            # print(line)
+            # print(pos)
             outputstr += "{:>5} {:>8}  {:>25}  {:>7}  {:>13}  {:>4} {:>4}\n".format(
                          count, symtype, name, array, role, line, pos)
             count += 1
