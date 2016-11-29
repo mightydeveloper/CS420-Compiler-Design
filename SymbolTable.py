@@ -5,6 +5,7 @@ import AST
 import ply.yacc as yacc
 from lexer import tokens
 import logging
+import ErrorCollector
 
 
 class SymbolTable(object):
@@ -13,6 +14,10 @@ class SymbolTable(object):
         self.table = []
 
     def add_entry(self, symtype, name, array, role, linepos):
+        for entry in self.table:
+            if entry[1] == name:
+                ErrorCollector.report("Error: declaration conflict(%s) at %s" % (name, linepos))
+                break
         self.table.append((symtype, name, array, role, linepos))
 
     def add_entry_with_shadowing(self, entry):
