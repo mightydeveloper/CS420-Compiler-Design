@@ -1,0 +1,15 @@
+### Python ###
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+table.txt
+tree.txt
+parselog.txt
+parser.out
+parsetab.py
+
+# temporal files to test
+tmp/
+!tmp/.gitkeep
