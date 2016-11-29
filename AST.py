@@ -602,6 +602,8 @@ class Expr(Node):
             return self.operand1.printast()
         elif self.expr_type == "id":
             return str(self.operand1)
+        elif self.expr_type == "paren":
+            return "("+self.operand1.printast()+")"
         else:  # intnum/floatnum case
             return str(self.operand1)
 

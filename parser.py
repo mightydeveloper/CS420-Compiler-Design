@@ -329,7 +329,7 @@ def p_expr(p):
         p[0] = AST.Expr("arrayID", idval=p[1], idIDX=p[3])
     elif len(p) == 4:
         if p[1] == '(':
-            p[0] = p[2]
+            p[0] = AST.Expr("paren", operand1=p[2])
         else:
             p[0] = AST.Expr("binop", operator=p[2], operand1=p[1], operand2=p[3])
     elif len(p) == 3:
