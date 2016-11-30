@@ -303,11 +303,13 @@ def p_default(p):
         p[0] = AST.CaseDefault(p[3])
     else:
         p[0] = None
-    p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
+
+    if p[0] is not None:
+        p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
 
 
 def p_expr(p):
-    """ expr : unop expr %prec UNOP
+    """ expr : MINUS expr %prec TIMES
              | expr EQ expr
              | expr NE expr
              | expr LT expr
@@ -346,11 +348,11 @@ def p_expr(p):
     p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
 
 
-def p_unop(p):
-    """ unop : MINUS
-    """
-    p[0] = p[1]
-    p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
+# def p_unop(p):
+#     """ unop : MINUS
+#     """
+#     p[0] = p[1]
+#     p[0].insertLineNumInfo(p.lineno(1), p.lexpos(1))
 
 # def p_binop(p):
 #     """ binop : PLUS
@@ -387,7 +389,6 @@ precedence = (
     ('left', 'LT', 'LE', 'GT', 'GE'),       # Relational operators
     ('left', 'PLUS', 'MINUS'),              # Addition and Subtraction
     ('left', 'TIMES', 'DIVIDE'),            # Multiplication and division
-    ('right', 'UNOP'),                      # Unary minus
     ('left', 'FUNC'),                       # Function call
 )
 

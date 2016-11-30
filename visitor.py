@@ -80,10 +80,18 @@ def visit_stmt(p, scope, tables):
 
 
 def visit_retstmt(p: RetStmt, scope, tables):
-    visit_expr(p.expr, scope, tables)
     func_name = scope.split(' - ')[0]
     func = find_function(func_name, tables)
     func_type = func.type.type.lower()
+
+    if p.expr is None:
+        ErrorCollector.warn("function %s return nothing here, casted to return to 0" % func_name, p.line_position)
+        if func_type == "int":
+            p.expr = Expr("intnum", operand1=0)
+        elif func_type == "float":
+            p.expr = Expr("floatnum", operand2=0.0)
+
+    visit_expr(p.expr, scope, tables)
 
     if func_type != p.expr.return_type():
         ErrorCollector.warn("return type of %s mismatch" % func_name, p.line_position)
@@ -91,6 +99,10 @@ def visit_retstmt(p: RetStmt, scope, tables):
 
 
 def visit_expr(p: Expr, scope, tables):
+    if p is None:
+        import inspect
+        frame = inspect.currentframe()
+        pdb.set_trace()
     p_type = p.expr_type
 
     if p_type == "unop" or p_type == "paren":
