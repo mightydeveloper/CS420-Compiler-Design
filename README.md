@@ -64,6 +64,6 @@ This will generate `tree.txt` as AST output, and `table.txt` as symbol table, pr
 
 ### spell checker assumption
 
-1. Only int is used for boolean, and test expr expectes int
+1. ~~Only int is used for boolean, and test expr expectes int~~ (modified to accept float also.)
 2. Switch statement identifier can't be auto casted since it violates syntax
 3. Return statement should have value to return. If not, return value is corrected to 0 with proper return type.
