@@ -224,9 +224,6 @@ def visit_ifstmt(p: IfStmt, scope, tables, count):
     scope += " - if("+str(count)+")"
 
     visit_expr(p.conditionexpr, scope, tables)
-    if p.conditionexpr.return_type() != "int":
-        ErrorCollector.warn("If statement test expr return value is not integer", p.line_position)
-        p.conditionexpr = TypeCast(p.conditionexpr, "int")
 
     # If
     if_scope = scope + "(if)"
@@ -247,10 +244,6 @@ def visit_ifstmt(p: IfStmt, scope, tables, count):
 def visit_forstmt(p: ForStmt, scope, tables, count):
     scope += " - for("+str(count)+")"
     visit_expr(p.conditionexpr, scope, tables)
-    if p.conditionexpr.return_type() != "int":
-        ErrorCollector.warn("For statement test expr return value is not integer", p.line_position)
-        p.conditionexpr = TypeCast(p.conditionexpr, "int")
-
     visit_assign(p.initial_assign, scope, tables)
     visit_assign(p.assign, scope, tables)
 
@@ -263,9 +256,6 @@ def visit_forstmt(p: ForStmt, scope, tables, count):
 def visit_whilestmt(p: WhileStmt, scope, tables, count):
     scope += " - while("+str(count)+")"
     visit_expr(p.conditionexpr, scope, tables)
-    if p.conditionexpr.return_type() != "int":
-        ErrorCollector.warn("While statement test expr return value is not integer", p.line_position)
-        p.conditionexpr = TypeCast(p.conditionexpr, "int")
 
     if p.repeatstmt.stmttype == "compoundstmt":
         visit_compoundStmt(p.repeatstmt.stmt, scope, tables)
