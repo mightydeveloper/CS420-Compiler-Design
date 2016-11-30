@@ -99,10 +99,6 @@ def visit_retstmt(p: RetStmt, scope, tables):
 
 
 def visit_expr(p: Expr, scope, tables):
-    if p is None:
-        import inspect
-        frame = inspect.currentframe()
-        pdb.set_trace()
     p_type = p.expr_type
 
     if p_type == "unop" or p_type == "paren":
