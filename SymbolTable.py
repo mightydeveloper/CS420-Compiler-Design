@@ -7,6 +7,41 @@ from lexer import tokens
 import logging
 import ErrorCollector
 
+class SymbolInfo(object):
+    def __init__(self, symtype, name, array, role, linepos):
+        self.symtype = symtype
+        self.name = name
+        self.array = array
+        self.role = role
+        self.linepos = linepos
+
+    def __getitem__(self, key):
+        if key == 0:
+            return self.symtype
+        elif key == 1:
+            return self.name
+        elif key == 2:
+            return self.array
+        elif key == 3:
+            return self.role
+        elif key == 4:
+            return self.linepos
+
+    def __iter__(self):
+        return self.Iterator(self)
+
+    class Iterator(object):
+        def __init__(self, info):
+            self.index = 0
+            self.info = info
+
+        def __next__(self):
+            if self.index < 5:
+                idx = self.index
+                self.index += 1
+                return self.info[idx]
+            else:
+                raise StopIteration()
 
 class SymbolTable(object):
     def __init__(self, name):
@@ -18,15 +53,16 @@ class SymbolTable(object):
             if entry[1] == name:
                 ErrorCollector.error("declaration conflict(%s)" % name, linepos)
                 break
-        self.table.append((symtype, name, array, role, linepos))
+        self.table.append(SymbolInfo(symtype, name, array, role, linepos))
 
     def add_entry_with_shadowing(self, entry):
         symtype, name, array, role, linepos = entry
-        for (_symtype, _name, _array, _role, _linepos) in self.table:
-            if _name == name:
-                self.table.remove((_symtype, _name, _array, _role, _linepos))
+        for registered in self.table:
+            if registered.name == name:
+                self.table.remove(registered)
                 break
-        self.table.append((symtype, name, array, role, linepos))
+
+        self.add_entry(symtype, name, array, role, linepos)
 
     def __str__(self):
         if len(self.table) == 0:

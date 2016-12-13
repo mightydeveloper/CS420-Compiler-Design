@@ -3,7 +3,6 @@
 
 debugNode = False
 
-
 class Node(object):
     def printast(self):
         return "NOT IMPLEMENTED!"
