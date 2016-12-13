@@ -6,6 +6,7 @@ import getopt
 import logging
 from SymbolTable import *
 from visitor import *
+import Backend
 
 
 __author__ = 'Young Seok Kim'
@@ -57,12 +58,13 @@ def testParser(parser, read_data):
 
 
 try:
-    myopts, args = getopt.getopt(sys.argv[1:], "l:p:s:")
+    myopts, args = getopt.getopt(sys.argv[1:], "l:p:s:g:")
 except getopt.GetoptError as e:
     print(str(e))
     print("Usage: %s -l inputFileName.c " % sys.argv[0])
     print("     : %s -p inputFileName.c " % sys.argv[0])
     print("     : %s -s inputFileName.c " % sys.argv[0])
+    print("     : %s -g inputFileName.c " % sys.argv[0])
     sys.exit(2)
 
 if not (len(sys.argv) == 3):
@@ -70,6 +72,7 @@ if not (len(sys.argv) == 3):
     print("Usage: %s -l inputFileName.c " % sys.argv[0])
     print("     : %s -p inputFileName.c " % sys.argv[0])
     print("     : %s -s inputFileName.c " % sys.argv[0])
+    print("     : %s -g inputFileName.c " % sys.argv[0])
     sys.exit(2)
 
 
@@ -115,8 +118,25 @@ for option, filename in myopts:
             if not ErrorCollector.has_error():
                 with open('tree.txt', 'w') as ASTf:
                     ASTf.write(result.printast())
+    elif option == '-g':
+        with open(filename) as f:
+            read_data = f.read()
+            result = testParser(parser, read_data)      # result is the root node
+            with open('table.txt', 'w') as Tablef:
+                tables = generate_symbol_table(result)
+                # Make output string from symbol table list
+                outputstr = ""
+                for tb in tables:
+                    if len(tb.table) == 0:
+                        continue
+                    outputstr += str(tb) + "\n"
+                # Write table information string to the table.txt file
+                Tablef.write(outputstr)
 
-
+            visit_program(result, tables)
+            with open('program.T', 'w') as script_output:
+                script = Backend.Compiler(result, tables).compile()
+                script_output.write(script)
 
         # with open(filename) as f:
         #     read_data = f.read()

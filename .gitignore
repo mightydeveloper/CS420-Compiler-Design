@@ -9,6 +9,7 @@ tree.txt
 parselog.txt
 parser.out
 parsetab.py
+program.T
 
 # temporal files to test
 tmp/

@@ -181,6 +181,9 @@ class Function(Node):
             outputstr += "params : " + str(self.params)
         return outputstr
 
+    def name(self):
+        return str(self.id)
+
     def printast(self):
         outputstr = ""
         outputstr += self.type.printast() + " "

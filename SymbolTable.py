@@ -14,6 +14,7 @@ class SymbolInfo(object):
         self.array = array
         self.role = role
         self.linepos = linepos
+        self.stack_index = -9999
 
     def __getitem__(self, key):
         if key == 0:
