@@ -14,7 +14,8 @@ class SymbolInfo(object):
         self.array = array
         self.role = role
         self.linepos = linepos
-        self.stack_index = -9999
+        self.frame_index = -9999
+        self.is_global = False
 
     def __getitem__(self, key):
         if key == 0:
@@ -49,6 +50,13 @@ class SymbolTable(object):
         self.name = name
         self.table = []
 
+    def add_info(self, info: SymbolInfo):
+        for entry in self.table:
+            if entry.name == info.name:
+                ErrorCollector.error("declaration conflict(%s)" % info.name, info.linepos)
+                break
+        self.table.append(info)
+
     def add_entry(self, symtype, name, array, role, linepos):
         for entry in self.table:
             if entry[1] == name:
@@ -57,13 +65,12 @@ class SymbolTable(object):
         self.table.append(SymbolInfo(symtype, name, array, role, linepos))
 
     def add_entry_with_shadowing(self, entry):
-        symtype, name, array, role, linepos = entry
         for registered in self.table:
-            if registered.name == name:
+            if registered.name == entry.name:
                 self.table.remove(registered)
                 break
 
-        self.add_entry(symtype, name, array, role, linepos)
+        self.add_info(entry)
 
     def __str__(self):
         if len(self.table) == 0:
