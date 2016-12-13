@@ -136,20 +136,24 @@ def visit_expr(p: Expr, scope, tables):
                 p.set_return_type("int")
 
             # TODO generate type conversion node
-    elif p_type == "id":
+    elif p_type == "id":    # Ex) cnt
         # TODO : change operand1 -> idval
         table = find_all_variables(scope, tables)
         entry = find_symbol(p.operand1, table)
         if entry is None:
             ErrorCollector.error("symbol not declared: " + str(p.operand1), p.line_position)
+            if entry[2] is not None:  # if symbol is array variable.
+                ErrorCollector.error("Non-array access to array variable", p.line_position)
             p.set_return_type('')
         else:
             p.set_return_type(entry[0])
-    elif p_type == "arrayID":
+    elif p_type == "arrayID":   # Ex) dp[3]
         table = find_all_variables(scope, tables)
         entry = find_symbol(p.idval, table)
         if entry is None:
             ErrorCollector.error("symbol not declared: " + str(p.idval), p.line_position)
+            if entry[2] is None:  # if symbol is non-array variable
+                ErrorCollector.error("Array access to non-array variable", p.line_position)
             p.set_return_type('')
         else:
             p.set_return_type(entry[0])
@@ -193,7 +197,6 @@ def visit_call(p: Call, scope, tables):
             p.arglist.args[index] = TypeCast(arg, param[0].type.lower())
 
 
-
 def visit_assign(p: Assign, scope, tables):
     table = find_all_variables(scope, tables)
     entry = find_symbol(str(p.id), table)
@@ -207,12 +210,12 @@ def visit_assign(p: Assign, scope, tables):
     if entry[0] != p.reval.return_type():
         ErrorCollector.warn("assignment value type mismatch " + entry[0] + " & " + p.reval.return_type(), p.line_position)
         p.reval = TypeCast(p.reval, entry[0])
-    if p.assigntype == "non-array":
-        if entry[2] is not None:
-            ErrorCollector.error("Array access to non-array variable", p.line_position)
-    else:
-        if entry[2] is None:
+    if p.assigntype == "non-array":     # Given code uses as non-array type.
+        if entry[2] is not None:        # if symbol is array variable.
             ErrorCollector.error("Non-array access to array variable", p.line_position)
+    else:
+        if entry[2] is None:            # if symbol is non-array variable
+            ErrorCollector.error("Array access to non-array variable", p.line_position)
 
         visit_expr(p.leval, scope, tables)
         if p.leval.return_type() != "int":
