@@ -80,7 +80,8 @@ class TMachineCodeGenerator(object):
         self.registercnt += 1
         return self.registercnt - 1
 
-    def getMemRegionWithVaraibleID(self, id, scope):
+    # in array access case, arrayIDX is also given
+    def lookupIDLocation(self, id, scope, arrayIdx=None):
         # TODO
         pass
 
@@ -168,14 +169,37 @@ class TMachineCodeGenerator(object):
                 pass
             self.addInstruction(instr)
             return result_register
+        elif p.expr_type == "id":
+            variableAddr = self.lookupIDLocation(p.idval)  # TODO
+            result_register = self.getNewRegister()
+            instr = Instruction(Instruction.MOVE, getFromAddress(variableAddr), register(result_register))
+            self.addInstruction(instr)
+            return result_register
+        elif p.expr_type == "arrayID":
+            variableAddr = self.lookupIDLocation(p.idval, p.idIDX) # TODO
+            result_register = self.getNewRegister()
+            instr = Instruction(Instruction.MOVE, getFromAddress(variableAddr), register(result_register))
+            self.addInstruction(instr)
+            return result_register
+        elif p.expr_type == "call":
+            # TODO
+        elif p.expr_type == "intnum" or p.expr_type == "floatnum":
+            result_register = self.getNewRegister()
+            instr = Instruction(Instruction.MOVE, p.operand1, register(result_register))
+            self.addInstruction(instr)
+            return result_register
+
+
+
+
 
     def handleSpecialFunctionCall(self, p: Call):
         if p.id == "printf" and len(p.arglist) == 1:
-            variableAddr = self.getMemRegionWithVaraibleID() # TODO
+            variableAddr = self.lookupIDLocation(p.arglist[0].) # TODO
             instr = Instruction(Instruction.WRITE, variableAddr)
             self.addInstruction(instr)
         elif p.id == "scanf" and len(p.arglist) == 1:
-            variableAddr = self.getMemRegionWithVaraibleID()  # TODO
+            variableAddr = self.lookupIDLocation()  # TODO
             if type == "int":
                 instr = Instruction(Instruction.READI, variableAddr)
             else:
