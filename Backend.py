@@ -238,7 +238,54 @@ class Compiler(object):
         self.program.append('LAB\t' + label_end)
 
     def compile_switchstmt(self, p: AST.SwitchStmt, scope: str, count):
-        pass
+        scope_switch = scope + " - switch("+str(count)+")"
+        label_start = 'SWITCH_START_' + label_style(scope)
+        label_default = 'SWITCH_DEFAULT_' + label_style(scope)
+        label_end = 'SWITCH_END_' + label_style(scope)
+
+        # load id value
+        if p.id.idtype == 'array':
+            id_expr = AST.Expr('arrayID', idval=p.id.id,
+                                idIDX=AST.Expr('intnum', operand1=p.id.intnum))
+        else:
+            id_expr = AST.Expr('id', operand1=p.id.id)
+
+        reg_id = self.compile_expr(id_expr, scope)
+
+        reg_test = 'VR({})'.format(VR.new_reg())
+
+        # branching table first
+        for (intnum, _, _) in p.caselist.cases.cases:
+            scope_case = scope_switch + "case("+str(intnum)+")"
+            label_case = 'SWITCH_CASE_' + label_style(scope_case+str(intnum))
+            self.program.extend([
+                'MOVE\t{}\t{}'.format(intnum, reg_test),
+                'SUB\t{0}@\t{1}@\t{0}'.format(reg_test, reg_id),
+                'JMPZ\t{}@\t{}'.format(reg_test, label_case)
+            ])
+
+        if p.caselist.default is None:
+            self.program.append('JMP\t' + label_end)
+        else:
+            self.program.append('JMP\t' + label_default)
+
+        # case body
+        for (intnum, stmtlist, break_exist) in p.caselist.cases.cases:
+            scope_case = scope_switch + "case("+str(intnum)+")"
+            label_case = 'SWITCH_CASE_' + label_style(scope_case+str(intnum))
+            self.program.append('LAB\t' + label_case)
+            self.compile_stmtlist(stmtlist, scope_case)
+            if break_exist:
+                self.program.append('JMP\t' + label_end)
+
+        if p.caselist.default is not None:
+            self.program.append('LAB\t' + label_default)
+            scope_default = scope_switch + "defaultcase"
+            self.compile_stmtlist(p.caselist.default.stmtlist, scope_default)
+            if p.caselist.default.break_exist:
+                self.program.append('JMP\t' + label_end)
+
+        self.program.append('LAB\t' + label_end)
 
     def compile_compoundstmt(self, p: AST.CompoundStmt, scope: str, count):
         scope += " - compound(" + str(count) + ")"
