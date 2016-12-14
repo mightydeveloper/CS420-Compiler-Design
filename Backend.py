@@ -39,12 +39,23 @@ class Compiler(object):
         index = 0
         for info in global_table.table:
             if info.role == 'variable':
-                info.frame_index = index
-                info.is_global = True
+                info.set_global_frame(index)
                 if info.array is None:
                     index += 1
                 else:
                     index += info.array
+
+    def local_setup(self, scope: str):
+        local_table = SymbolTable.find_symbol_table(scope, self.tables)
+        if local_table is None:
+            return
+
+        for info in local_table.table:
+            if info.role == 'variable':
+                self.sp += 1
+                info.set_frame(self.fp, self.sp)
+                if info.array is not None:
+                    self.sp += info.array - 1
 
     def main_setup(self):
         self.program.extend([
@@ -77,11 +88,16 @@ class Compiler(object):
                 local_index = 1
                 for info in func_table.table:
                     if info.role == 'parameter':
-                        info.frame_index = param_index
+                        # TODO how to stack parameter
+                        info.set_frame(self.fp, param_index)
                         param_index -= 1
                     elif info.role == 'variable':
-                        info.frame_index = local_index
-                        local_index += 1
+                        info.set_frame(self.fp, local_index)
+                        if info.array is None:
+                            local_index += 1
+                        else:
+                            local_index += info.array
+                self.sp += local_index
 
                 # Add function code
                 self.program.append(label_start)
@@ -137,6 +153,7 @@ class Compiler(object):
             self.program.append('JMPZ\t{}@\t{}'.format(reg_test, label_end))
 
         if p.repeatstmt.stmttype == "compoundstmt":
+            self.local_setup(scope_while)
             repeatstmt = p.repeatstmt.stmt
         else:
             repeatstmt = AST.StmtList()
@@ -168,6 +185,7 @@ class Compiler(object):
         self.program.append('JMPZ\t{}@\t{}'.format(reg_test, label_end))
 
         if p.repeatstmt.stmttype == "compoundstmt":
+            self.local_setup(scope_for)
             repeatstmt = p.repeatstmt.stmt
         else:
             repeatstmt = AST.StmtList()
@@ -189,7 +207,6 @@ class Compiler(object):
 
         # conditional expr
         reg_test = self.compile_expr(p.conditionexpr, scope)
-
         self.program.extend([
             'JMPZ\t{}@\t{}'.format(reg_test, label_else),
             'JMP\t' + label_then
@@ -200,6 +217,7 @@ class Compiler(object):
 
         if_scope = scope_base+"(if)"
         if p.thenstmt.stmttype == "compoundstmt":
+            self.local_setup(if_scope)
             thenstmt = p.thenstmt.stmt.stmtlist
         else:
             thenstmt = p.thenstmt.stmt
@@ -213,6 +231,7 @@ class Compiler(object):
             else_scope = scope_base+"(else)"
 
             if p.elsestmt.stmttype == "compoundstmt":
+                self.local_setup(else_scope)
                 elsestmt = p.elsestmt.stmt.stmtlist
             else:
                 elsestmt = p.elsestmt.stmt
@@ -224,7 +243,9 @@ class Compiler(object):
         pass
 
     def compile_compoundstmt(self, p: AST.CompoundStmt, scope: str, count):
-        pass
+        scope += " - compound(" + str(count) + ")"
+        self.local_setup(scope)
+        self.compile_stmtlist(p.stmtlist, scope)
 
     def compile_assign(self, assign: AST.Assign, scope: str):
         table = SymbolTable.find_all_variables(scope, self.tables)
@@ -232,15 +253,15 @@ class Compiler(object):
         reg_num = VR.new_reg()
         reg_addr = 'VR({})'.format(reg_num)
 
-        addr = 0
         # store variable index in area to new register
         if info.is_global:
             area = 'GLOBAL'
+            addr = info.global_index
         else:
             area = 'MEM'
             # store current fp to addr store
-            addr += self.fp
-        addr += info.frame_index
+            addr = self.fp +info.get_frame(self.fp)
+
         self.program.append('MOVE\t{}\t{}'.format(addr, reg_addr))
 
         if assign.assigntype == 'array':
@@ -279,15 +300,14 @@ class Compiler(object):
             reg_num = VR.new_reg()
             reg_addr = 'VR({})'.format(reg_num)
 
-            addr = 0
             # store variable index in area to new register
             if info.is_global:
                 area = 'GLOBAL'
+                addr = info.global_index
             else:
                 area = 'MEM'
                 # store current fp to addr store
-                addr += self.fp
-            addr += info.frame_index
+                addr = self.fp + info.get_frame(self.fp)
 
             # load value to reg_addr
             self.program.append('MOVE\t{}({})@\t{}'.format(area, addr, reg_addr))
@@ -298,15 +318,14 @@ class Compiler(object):
             reg_num = VR.new_reg()
             reg_addr = 'VR({})'.format(reg_num)
 
-            addr = 0
             # store variable index in area to new register
             if info.is_global:
                 area = 'GLOBAL'
+                addr = info.global_index
             else:
                 area = 'MEM'
                 # store current fp to addr store
-                addr += self.fp
-            addr += info.frame_index
+                addr = self.fp + info.get_frame(self.fp)
             self.program.append('MOVE\t{}\t{}'.format(addr, reg_addr))
 
             reg_level = self.compile_expr(expr.idIDX, scope)
