@@ -113,8 +113,7 @@ class Compiler(object):
         counts = defaultdict(int)
 
         if type(p) is AST.Stmt:
-            stmts = StmtList()
-            stmts.add_stmt(p)
+            stmts = [p]
         else:
             stmts = p.stmts
 
@@ -156,12 +155,11 @@ class Compiler(object):
 
         if p.repeatstmt.stmttype == "compoundstmt":
             self.local_setup(scope_while)
-            repeatstmt = p.repeatstmt.stmt
+            repeatstmt = p.repeatstmt.stmt.stmtlist
         else:
-            repeatstmt = AST.StmtList()
-            repeatstmt.add_stmt(p.repeatstmt)
+            repeatstmt = p.repeatstmt
 
-        self.compile_compoundstmt(repeatstmt, scope_while, 1)
+        self.compile_stmtlist(repeatstmt, scope_while)
 
         if p.style == 'dowhile':
             reg_test = self.compile_expr(p.conditionexpr, scope)
@@ -187,12 +185,11 @@ class Compiler(object):
 
         if p.repeatstmt.stmttype == "compoundstmt":
             self.local_setup(scope_for)
-            repeatstmt = p.repeatstmt.stmt
+            repeatstmt = p.repeatstmt.stmt.stmtlist
         else:
-            repeatstmt = AST.StmtList()
-            repeatstmt.add_stmt(p.repeatstmt)
+            repeatstmt = p.repeatstmt
 
-        self.compile_compoundstmt(repeatstmt, scope_for, 1)
+        self.compile_stmtlist(repeatstmt, scope_for)
         self.compile_assign(p.assign, scope)
         self.program.append('JMP\t' + label_start)
         self.program.append('LAB\t' + label_end)
@@ -221,7 +218,7 @@ class Compiler(object):
             self.local_setup(if_scope)
             thenstmt = p.thenstmt.stmt.stmtlist
         else:
-            thenstmt = p.thenstmt.stmt
+            thenstmt = p.thenstmt
 
         self.compile_stmtlist(thenstmt, if_scope)
         self.program.append('JMP\t' + label_end)
@@ -235,7 +232,7 @@ class Compiler(object):
                 self.local_setup(else_scope)
                 elsestmt = p.elsestmt.stmt.stmtlist
             else:
-                elsestmt = p.elsestmt.stmt
+                elsestmt = p.elsestmt
 
             self.compile_stmtlist(elsestmt, else_scope)
         self.program.append('LAB\t' + label_end)
@@ -441,7 +438,7 @@ class Compiler(object):
             else:
                 self.program.append('FMUL\t-1.0\t{0}@\t{0}'.format(reg))
             return reg
-        elif expr.expr_type == 'binop':
+        elif expr.expr_type == 'binop' and expr.operator in ['+', '-', '*', '/']:
             reg_out = 'VR({})'.format(VR.new_reg())
             reg_lhs = self.compile_expr(expr.operand1, scope, True)
             reg_rhs = self.compile_expr(expr.operand2, scope, True)
@@ -466,6 +463,71 @@ class Compiler(object):
                 raise Exception('Expr operator is wrong: ' + expr.operator)
 
             self.program.append('{}{}\t{}@\t{}@\t{}'.format(type_prefix, op, reg_lhs, reg_rhs, reg_out))
+            return reg_out
+        elif expr.expr_type == 'binop' and expr.operator in ['==', '!=', '>=', '>', '<', '<=']:
+            reg_out = 'VR({})'.format(VR.new_reg())
+            reg_lhs = self.compile_expr(expr.operand1, scope, True)
+            reg_rhs = self.compile_expr(expr.operand2, scope, True)
+
+            label_true = 'COMP_TRUE_' + label_style(reg_out)
+            label_false = 'COMP_FALSE_' + label_style(reg_out)
+            label_end = 'COMP_END_' + label_style(reg_out)
+
+            if expr.operand1.return_type() == 'int':
+                op = 'SUB'
+            elif expr.operand1.return_type() == 'float':
+                op = 'FSUB'
+            else:
+                raise Exception('Expr return type unknown')
+
+            self.program.append('{}\t{}@\t{}@\t{}'.format(op, reg_lhs, reg_rhs, reg_out))
+
+            if expr.operator == '==':
+                self.program.extend([
+                    'JMPZ\t{}@\t{}'.format(reg_out, label_true),
+                    'JMP\t' + label_false
+                ])
+            elif expr.operator == '!=':
+                self.program.extend([
+                    'JMPZ\t{}@\t{}'.format(reg_out, label_false),
+                    'JMP\t' + label_true
+                ])
+            elif expr.operator == '>=':
+                self.program.extend([
+                    'JMPZ\t{}@\t{}'.format(reg_out, label_true),
+                    'JMPN\t{}@\t{}'.format(reg_out, label_false),
+                    'JMP\t' + label_true
+                ])
+            elif expr.operator == '>':
+                self.program.extend([
+                    'JMPZ\t{}@\t{}'.format(reg_out, label_false),
+                    'JMPN\t{}@\t{}'.format(reg_out, label_false),
+                    'JMP\t' + label_true
+                ])
+            elif expr.operator == '<':
+                self.program.extend([
+                    'JMPZ\t{}@\t{}'.format(reg_out, label_false),
+                    'JMPN\t{}@\t{}'.format(reg_out, label_true),
+                    'JMP\t' + label_false
+                ])
+            elif expr.operator == '<=':
+                self.program.extend([
+                    'JMPZ\t{}@\t{}'.format(reg_out, label_true),
+                    'JMPN\t{}@\t{}'.format(reg_out, label_true),
+                    'JMP\t' + label_false
+                ])
+            else:
+                op = ''
+                raise Exception('Expr operator is wrong: ' + expr.operator)
+
+            self.program.extend([
+                'LAB\t' + label_true,
+                'MOVE\t1\t' + reg_out,
+                'JMP\t' + label_end,
+                'LAB\t' + label_false,
+                'MOVE\t0\t' + reg_out,
+                'LAB\t' + label_end
+            ])
             return reg_out
         else:
             return -9999
