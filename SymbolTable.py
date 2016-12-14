@@ -15,12 +15,9 @@ class SymbolInfo(object):
         self.role = role
         self.linepos = linepos
 
-        # used for local variable reference
-        self.address = {} # frame pointer -> frame index
-
-        # global variable check
+        # variable check
         self.is_global = False
-        self.global_index = -9999
+        self.frame_index = -9999
 
     def __getitem__(self, key):
         if key == 0:
@@ -36,22 +33,6 @@ class SymbolInfo(object):
 
     def __iter__(self):
         return self.Iterator(self)
-
-    def set_frame(self, pointer: int, index: int):
-        if pointer in self.address:
-            print('same symbol redefined in AR: ' +self.name)
-            raise Exception()
-        self.address[pointer] = index
-
-    def set_global_frame(self, index: int):
-        self.is_global = True
-        self.global_index = index
-
-    def get_frame(self, pointer: int) -> int:
-        if pointer not in self.address:
-            printf('Not allocated variable:' + self.name)
-            raise Exception()
-        return self.address[pointer]
 
     class Iterator(object):
         def __init__(self, info):

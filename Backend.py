@@ -15,8 +15,11 @@ class Compiler(object):
         self.ast = ast
         self.tables = tables
         self.program = []
-        self.fp = 0
-        self.sp = 0
+        # virtual stack pointer used for stack size measurement
+        self.vsp = 0
+
+        # stack size per function
+        self.stack_sizes = {}
 
     def compile(self) -> str:
         self.area_setup()
@@ -24,6 +27,14 @@ class Compiler(object):
         self.program.append('')
         self.function_setup()
         self.program.append('')
+
+        # set proper stack pointer
+        if 'main' in self.stack_sizes:
+            sp = self.stack_sizes['main']
+            sp_cmd = 'MOVE\t0\tSP'
+            sp_index = self.program.index(sp_cmd)
+            self.program.insert(sp_index, 'MOVE\t{}\tSP'.format(sp))
+            self.program.remove(sp_cmd)
 
         return '\n'.join(self.program)
 
@@ -42,7 +53,7 @@ class Compiler(object):
         index = 0
         for info in global_table.table:
             if info.role == 'variable':
-                info.set_global_frame(index)
+                info.frame_index = index
                 if info.array is None:
                     index += 1
                 else:
@@ -55,10 +66,10 @@ class Compiler(object):
 
         for info in local_table.table:
             if info.role == 'variable':
-                self.sp += 1
-                info.set_frame(self.fp, self.sp)
+                self.vsp += 1
+                info.frame_index = self.vsp
                 if info.array is not None:
-                    self.sp += info.array - 1
+                    self.vsp += info.array - 1
 
     def main_setup(self):
         self.program.extend([
@@ -75,6 +86,8 @@ class Compiler(object):
             ])
         else:
             for function in functions.functions:
+                # reset virtual stack
+                self.vsp = 0
                 func_name = function.name()
 
                 # LABEL
@@ -90,22 +103,21 @@ class Compiler(object):
 
                 local_index = 0
                 for info in func_table.table:
-                    elif info.role == 'variable':
+                    if info.role == 'variable':
                         local_index += 1
-                        info.set_frame(self.fp, local_index)
+                        info.frame_index = local_index
                         if info.array is not None:
                             local_index += info.array - 1
-                self.sp += local_index
+                self.vsp += local_index
 
                 param_index = 0
                 for info in reversed(func_table.table):
                     if info.role == 'parameter':
                         if info.array is None:
                             param_index -= 1
-                            info.set_frame(self.fp, param_index)
                         else:
                             param_index -= info.array
-                            info.set_frame(self.fp, param_index)
+                        info.frame_index = param_index
 
                 # Add function code
                 self.program.append(label_start)
@@ -113,6 +125,7 @@ class Compiler(object):
                     self.main_setup()
                 self.compile_stmtlist(function.comoundstmt.stmtlist, func_name)
                 self.program.append(label_end)
+                self.stack_sizes[func_name] = self.vsp
 
     def compile_stmtlist(self, p: Union[AST.StmtList, AST.Stmt], scope: str):
         counts = defaultdict(int)
@@ -306,13 +319,11 @@ class Compiler(object):
         # store variable index in area to new register
         if info.is_global:
             area = 'GLOBAL'
-            addr = info.global_index
         else:
             area = 'MEM'
-            # store current fp to addr store
-            addr = self.fp +info.get_frame(self.fp)
 
-        self.program.append('MOVE\t{}\t{}'.format(addr, reg_addr))
+        self.program.append('MOVE\tFP@\t{}'.format(reg_addr))
+        self.program.append('ADD\t{0}@\t{1}\t{0}'.format(reg_addr, info.frame_index))
 
         if assign.assigntype == 'array':
             reg_leval = self.compile_expr(assign.leval, scope)
@@ -349,15 +360,13 @@ class Compiler(object):
             # store variable index in area to new register
             if info.is_global:
                 area = 'GLOBAL'
-                addr = info.global_index
             else:
                 area = 'MEM'
-                # store current fp to addr store
-                addr = self.fp + info.get_frame(self.fp)
 
             # get variable address
             reg_addr = 'VR({})'.format(VR.new_reg())
-            self.program.append('MOVE\t{}\t{}'.format(addr, reg_addr))
+            self.program.append('MOVE\tFP@\t{}'.format(reg_addr))
+            self.program.append('ADD\t{0}@\t{1}\t{0}'.format(reg_addr, info.frame_index))
 
             if param.expr_type == 'arrayID':
                 reg_leval = self.compile_expr(param.idIDX, scope)
@@ -403,14 +412,14 @@ class Compiler(object):
             # store variable index in area to new register
             if info.is_global:
                 area = 'GLOBAL'
-                addr = info.global_index
             else:
                 area = 'MEM'
-                # store current fp to addr store
-                addr = self.fp + info.get_frame(self.fp)
+
+            self.program.append('MOVE\tFP@\t{}'.format(reg_addr))
+            self.program.append('ADD\t{0}@\t{1}\t{0}'.format(reg_addr, info.frame_index))
 
             # load value to reg_addr
-            self.program.append('MOVE\t{}({})@\t{}'.format(area, addr, reg_addr))
+            self.program.append('MOVE\t{}({}@)@\t{}'.format(area, reg_addr, reg_addr))
             return reg_addr
         elif expr.expr_type == 'arrayID':
             table = SymbolTable.find_all_variables(scope, self.tables)
@@ -421,12 +430,11 @@ class Compiler(object):
             # store variable index in area to new register
             if info.is_global:
                 area = 'GLOBAL'
-                addr = info.global_index
             else:
                 area = 'MEM'
-                # store current fp to addr store
-                addr = self.fp + info.get_frame(self.fp)
-            self.program.append('MOVE\t{}\t{}'.format(addr, reg_addr))
+
+            self.program.append('MOVE\tFP@\t{}'.format(reg_addr))
+            self.program.append('ADD\t{0}@\t{1}\t{0}'.format(reg_addr, info.frame_index))
 
             reg_leval = self.compile_expr(expr.idIDX, scope, True)
             self.program.append('ADD\t{0}@\t{1}@\t{0}'.format(reg_addr, reg_leval))
