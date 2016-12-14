@@ -5,6 +5,7 @@ import VR
 import pdb
 
 from collections import defaultdict
+from typing import Union
 
 class Compiler(object):
     def __init__(self, ast, tables):
@@ -89,10 +90,16 @@ class Compiler(object):
                 self.compile_stmtlist(function.comoundstmt.stmtlist, func_name)
                 self.program.append(label_end)
 
-    def compile_stmtlist(self, p: AST.StmtList, scope: str):
+    def compile_stmtlist(self, p: Union[AST.StmtList, AST.Stmt], scope: str):
         counts = defaultdict(int)
 
-        for stmt in p.stmts:
+        if type(p) is AST.Stmt:
+            stmts = StmtList()
+            stmts.add_stmt(p)
+        else:
+            stmts = p.stmts
+
+        for stmt in stmts:
             if stmt.stmttype == "assignstmt":
                 self.compile_assign(stmt.stmt.assign, scope)
             elif stmt.stmttype == "callstmt":
@@ -101,21 +108,123 @@ class Compiler(object):
                 self.compile_retstmt(stmt.stmt, scope)
             elif stmt.stmttype == "whilestmt":
                 counts["while"] += 1
-                tables += make_tables_for_whilestmt(stmt.stmt, scope, count=counts["while"])
+                self.compile_whilestmt(stmt.stmt, scope, counts["while"])
             elif stmt.stmttype == "forstmt":
                 counts["for"] += 1
-                tables += make_tables_for_forstmt(stmt.stmt, scope, count=counts["for"])
+                self.compile_forstmt(stmt.stmt, scope, counts["for"])
             elif stmt.stmttype == "ifstmt":
                 counts["if"] += 1
-                tables += make_tables_for_ifstmt(stmt.stmt, scope, count=counts["if"])
+                self.compile_ifstmt(stmt.stmt, scope, counts["if"])
             elif stmt.stmttype == "switchstmt":
                 counts["switch"] += 1
-                tables += make_tables_for_switchstmt(stmt.stmt, scope, count=counts["switch"])
+                self.compile_switchstmt(stmt.stmt, scope, counts["switch"])
             elif stmt.stmttype == "compoundstmt":
                 counts["compound"] += 1
-                tables += make_tables_for_compoundStmt(stmt.stmt, scope, count=counts["compound"])
+                self.compile_compoundstmt(stmt.stmt, scope, counts["compound"])
             else: # Semicolon case
                 continue
+
+    def compile_whilestmt(self, p: AST.WhileStmt, scope: str, count):
+        scope_while = scope + " - while("+str(count)+")"
+        scope_label = scope_while.replace(' - ', '_')\
+                        .translate(str.maketrans('()0123456789', '__abcdefghij'))
+        label_start = 'WHILE_START_' + scope_label
+        label_end = 'WHILE_END_' + scope_label
+
+        self.program.append('LAB\t' + label_start)
+        if p.style == 'while':
+            reg_test = self.compile_expr(p.conditionexpr, scope)
+            self.program.append('JMPZ\t{}@\t{}'.format(reg_test, label_end))
+
+        if p.repeatstmt.stmttype == "compoundstmt":
+            repeatstmt = p.repeatstmt.stmt
+        else:
+            repeatstmt = AST.StmtList()
+            repeatstmt.add_stmt(p.repeatstmt)
+
+        self.compile_compoundstmt(repeatstmt, scope_while, 1)
+
+        if p.style == 'dowhile':
+            reg_test = self.compile_expr(p.conditionexpr, scope)
+            self.program.append('JMPZ\t{}@\t{}'.format(reg_test, label_end))
+
+        self.program.append('JMP\t' + label_start)
+        self.program.append('LAB\t' + label_end)
+
+
+    def compile_forstmt(self, p: AST.ForStmt, scope: str, count):
+        scope_for = scope + " - for("+str(count)+")"
+        scope_label = scope_for.replace(' - ', '_')\
+                        .translate(str.maketrans('()0123456789', '__abcdefghij'))
+        label_start = 'FOR_START_' + scope_label
+        label_end = 'FOR_END_' + scope_label
+
+        # inital assign first
+        self.compile_assign(p.initial_assign, scope)
+        # loop start
+        self.program.append('LAB\t' + label_start)
+
+        reg_test = self.compile_expr(p.conditionexpr, scope)
+        self.program.append('JMPZ\t{}@\t{}'.format(reg_test, label_end))
+
+        if p.repeatstmt.stmttype == "compoundstmt":
+            repeatstmt = p.repeatstmt.stmt
+        else:
+            repeatstmt = AST.StmtList()
+            repeatstmt.add_stmt(p.repeatstmt)
+
+        self.compile_compoundstmt(repeatstmt, scope_for, 1)
+        self.compile_assign(p.assign, scope)
+        self.program.append('JMP\t' + label_start)
+        self.program.append('LAB\t' + label_end)
+
+    def compile_ifstmt(self, p: AST.IfStmt, scope: str, count):
+        scope_base = scope + " - if("+str(count)+")"
+        label_start = 'IF_START_' + label_style(scope_base)
+        label_then = 'IF_THEN_' + label_style(scope_base)
+        label_else = 'IF_ELSE_' + label_style(scope_base)
+        label_end = 'IF_END_' + label_style(scope_base)
+
+        self.program.append('LAB\t' + label_start)
+
+        # conditional expr
+        reg_test = self.compile_expr(p.conditionexpr, scope)
+
+        self.program.extend([
+            'JMPZ\t{}@\t{}'.format(reg_test, label_else),
+            'JMP\t' + label_then
+        ])
+
+        # Then clause body
+        self.program.append('LAB\t' + label_then)
+
+        if_scope = scope_base+"(if)"
+        if p.thenstmt.stmttype == "compoundstmt":
+            thenstmt = p.thenstmt.stmt.stmtlist
+        else:
+            thenstmt = p.thenstmt.stmt
+
+        self.compile_stmtlist(thenstmt, if_scope)
+        self.program.append('JMP\t' + label_end)
+
+        # Else clause body
+        self.program.append('LAB\t' + label_else)
+        if p.elsestmt is not None:
+            else_scope = scope_base+"(else)"
+
+            if p.elsestmt.stmttype == "compoundstmt":
+                elsestmt = p.elsestmt.stmt.stmtlist
+            else:
+                elsestmt = p.elsestmt.stmt
+
+            self.compile_stmtlist(elsestmt, else_scope)
+        self.program.append('LAB\t' + label_end)
+
+    def compile_switchstmt(self, p: AST.SwitchStmt, scope: str, count):
+        pass
+
+    def compile_compoundstmt(self, p: AST.CompoundStmt, scope: str, count):
+        pass
 
     def compile_assign(self, assign: AST.Assign, scope: str):
         table = SymbolTable.find_all_variables(scope, self.tables)
@@ -155,6 +264,11 @@ class Compiler(object):
     def compile_expr(self, expr: AST.Expr, scope: str) -> str:
         # returns register number
         if expr.expr_type == 'intnum':
+            reg_num = VR.new_reg()
+            reg = 'VR({})'.format(reg_num)
+            self.program.append('MOVE\t{}\t{}'.format(expr.operand1, reg))
+            return reg
+        elif expr.expr_type == 'floatnum':
             reg_num = VR.new_reg()
             reg = 'VR({})'.format(reg_num)
             self.program.append('MOVE\t{}\t{}'.format(expr.operand1, reg))
@@ -203,3 +317,8 @@ class Compiler(object):
             return reg_addr
         else:
             return -9999
+
+# LABEL allows only alphabets and underscore
+def label_style(scope: str) -> str:
+    return scope.replace(' - ', '_')\
+            .translate(str.maketrans('()0123456789', '__abcdefghij'))
