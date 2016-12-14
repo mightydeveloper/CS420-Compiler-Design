@@ -142,8 +142,7 @@ class Compiler(object):
 
     def compile_whilestmt(self, p: AST.WhileStmt, scope: str, count):
         scope_while = scope + " - while("+str(count)+")"
-        scope_label = scope_while.replace(' - ', '_')\
-                        .translate(str.maketrans('()0123456789', '__abcdefghij'))
+        scope_label = label_style(scope_while)
         label_start = 'WHILE_START_' + scope_label
         label_end = 'WHILE_END_' + scope_label
 
@@ -171,8 +170,7 @@ class Compiler(object):
 
     def compile_forstmt(self, p: AST.ForStmt, scope: str, count):
         scope_for = scope + " - for("+str(count)+")"
-        scope_label = scope_for.replace(' - ', '_')\
-                        .translate(str.maketrans('()0123456789', '__abcdefghij'))
+        scope_label = label_style(scope_for)
         label_start = 'FOR_START_' + scope_label
         label_end = 'FOR_END_' + scope_label
 
