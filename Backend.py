@@ -1,5 +1,5 @@
-
 import pdb
+import re
 
 import AST
 import SymbolTable
@@ -27,6 +27,7 @@ class Compiler(object):
         self.program.append('')
         self.function_setup()
         self.program.append('')
+        self.return_phase_setup()
 
         # set proper stack pointer
         if 'main' in self.stack_sizes:
@@ -36,6 +37,12 @@ class Compiler(object):
             self.program.insert(sp_index, 'MOVE\t{}\tSP'.format(sp))
             self.program.remove(sp_cmd)
 
+        # set proper stack size
+        for i in range(len(self.program)):
+            match = re.search('ADD\t([A-Za-z][A-Za-z0-9_]*)\tSP@\tSP', self.program[i])
+            if match is not None:
+                func_name = match.groups()[0]
+                self.program[i] = 'ADD\t{}\tSP@\tSP'.format(self.stack_sizes[func_name])
         return '\n'.join(self.program)
 
     def area_setup(self):
@@ -75,6 +82,7 @@ class Compiler(object):
         self.program.extend([
             'MOVE\t0\tFP',
             'MOVE\t0\tSP',
+            'MOVE\t0\tMEM',
         ])
 
     def function_setup(self):
@@ -110,7 +118,8 @@ class Compiler(object):
                             local_index += info.array - 1
                 self.vsp += local_index
 
-                param_index = 0
+                # FP(-1) is reserved for return addr
+                param_index = -1
                 for info in reversed(func_table.table):
                     if info.role == 'parameter':
                         if info.array is None:
@@ -124,8 +133,22 @@ class Compiler(object):
                 if func_name == 'main':
                     self.main_setup()
                 self.compile_stmtlist(function.comoundstmt.stmtlist, func_name)
+                if func_name == 'main':
+                    self.program.append('LAB\tEXIT')
                 self.program.append(label_end)
                 self.stack_sizes[func_name] = self.vsp
+
+    def return_phase_setup(self):
+        reg_return = 'VR({})'.format(VR.new_reg())
+        self.program.extend([
+            'LAB\tRETURN_PHASE',
+            'JMPZ\tFP@\tEXIT',
+            'MOVE\tFP@\tSP',
+            'MOVE\tMEM(FP@)@\tFP',
+            'SUB\tSP@\t1\tSP',
+            'JMP\tMEM(SP@)@',
+            ''
+        ])
 
     def compile_stmtlist(self, p: Union[AST.StmtList, AST.Stmt], scope: str):
         counts = defaultdict(int)
@@ -375,11 +398,37 @@ class Compiler(object):
             # store value to memory
             self.program.append('MOVE\t{}@\t{}({}@)'.format(reg_buf, area, reg_addr))
         else:
-            func = SymbolTable.find_function(func_name, self.tables)
+            func_def = SymbolTable.find_function(func_name, self.tables)
+            label_return = 'RETURN_{}'.format(call.line_position[1])
+
+            self.program.append('ADD\t1\tSP@\tSP')
+            for (arg, spec) in zip(call.arglist.args, func_def.params.paramlist):
+                reg_val = self.compile_expr(arg, scope)
+                ident = spec[1]
+                if ident.idtype == 'array':
+                    # Get address parsing string register address
+                    first_index = int(re.search('([0-9]+)', reg_val).groups()[0])
+                    for i in range(ident.intnum):
+                        self.program.append('MOVE\tVR({})@\tMEM(SP@)'.format(first_index + i))
+                        self.program.append('ADD\t1\tSP@\tSP')
+                else:
+                    self.program.append('MOVE\t{}@\tMEM(SP@)'.format(reg_val))
+                    self.program.append('ADD\t1\tSP@\tSP')
+            self.program.extend([
+                'MOVE\t{}\tMEM(SP@)'.format(label_return),
+                'ADD\t1\tSP@\tSP',
+                'MOVE\tFP@\tMEM(SP@)',
+                'MOVE\tSP@\tFP',
+                'ADD\t{}\tSP@\tSP'.format(func_name), # changed at compile step
+                'JMP\tF_START_' + func_name,
+                'LAB\t' + label_return
+            ])
+
 
     def compile_retstmt(self, stmt: AST.RetStmt, scope: str):
         reg = self.compile_expr(stmt.expr, scope)
         self.program.append('MOVE\t{}@\tRP'.format(reg))
+        self.program.append('JMP\tRETURN_PHASE')
 
     def compile_expr(self, expr: Union[AST.Expr, AST.TypeCast], scope: str, recursion=False) -> str:
         if not recursion:
@@ -542,6 +591,11 @@ class Compiler(object):
                 'MOVE\t0\t' + reg_out,
                 'LAB\t' + label_end
             ])
+            return reg_out
+        elif expr.expr_type == 'call':
+            self.compile_call(expr.operand1, scope)
+            reg_out = 'VR({})'.format(VR.new_reg())
+            self.program.append('MOVE\tRP@\t' + reg_out)
             return reg_out
         else:
             return -9999
