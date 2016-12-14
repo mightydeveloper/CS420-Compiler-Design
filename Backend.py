@@ -319,9 +319,48 @@ class Compiler(object):
         self.program.append('MOVE\t{}@\t{}({}@)'.format(reg_reval, area, reg_addr))
 
     def compile_call(self, call: AST.Call, scope: str):
-        if str(call.id) == 'printf' and call.arglist is not None:
+        func_name = str(call.id)
+
+        if func_name == 'printf':
             reg_value = self.compile_expr(call.arglist.args[0], scope)
             self.program.append('WRITE\t{}@'.format(reg_value))
+
+        elif func_name == 'scanf':
+            # Find argment symbol
+            table = SymbolTable.find_all_variables(scope, self.tables)
+            param = call.arglist.args[0]
+            if param.expr_type == 'arrayID':
+                info = SymbolTable.find_symbol(str(param.idval), table)
+            else:
+                info = SymbolTable.find_symbol(str(param.operand1), table)
+
+            # read to buffer register
+            reg_buf = 'VR({})'.format(VR.new_reg())
+            if info.symtype in ['int', 'INT']:
+                self.program.append('READI\t' + reg_buf)
+            else:
+                self.program.append('READF\t' + reg_buf)
+
+            # store variable index in area to new register
+            if info.is_global:
+                area = 'GLOBAL'
+                addr = info.global_index
+            else:
+                area = 'MEM'
+                # store current fp to addr store
+                addr = self.fp + info.get_frame(self.fp)
+
+            # get variable address
+            reg_addr = 'VR({})'.format(VR.new_reg())
+            self.program.append('MOVE\t{}\t{}'.format(addr, reg_addr))
+
+            if param.expr_type == 'arrayID':
+                reg_leval = self.compile_expr(param.idIDX, scope)
+                self.program.append('ADD\t{0}@\t{1}@\t{0}'.format(reg_addr, reg_leval))
+
+            # store value to memory
+            self.program.append('MOVE\t{}@\t{}({}@)'.format(reg_buf, area, reg_addr))
+
 
     def compile_retstmt(self, stmt: AST.RetStmt, scope: str):
         reg = self.compile_expr(stmt.expr, scope)
