@@ -310,8 +310,8 @@ class Compiler(object):
         self.program.append('MOVE\t{}\t{}'.format(addr, reg_addr))
 
         if assign.assigntype == 'array':
-            reg_level = self.compile_expr(assign.level, scope)
-            self.program.append('ADD\t{0}@\t{1}@\t{0}'.format(reg_addr, reg_level))
+            reg_leval = self.compile_expr(assign.leval, scope)
+            self.program.append('ADD\t{0}@\t{1}@\t{0}'.format(reg_addr, reg_leval))
 
         # get register address containing value
         reg_reval = self.compile_expr(assign.reval, scope)
@@ -373,8 +373,8 @@ class Compiler(object):
                 addr = self.fp + info.get_frame(self.fp)
             self.program.append('MOVE\t{}\t{}'.format(addr, reg_addr))
 
-            reg_level = self.compile_expr(expr.idIDX, scope)
-            self.program.append('ADD\t{0}@\t{1}@\t{0}'.format(reg_addr, reg_level))
+            reg_leval = self.compile_expr(expr.idIDX, scope)
+            self.program.append('ADD\t{0}@\t{1}@\t{0}'.format(reg_addr, reg_leval))
 
             # load value to reg_addr
             self.program.append('MOVE\t{}({}@)@\t{}'.format(area, reg_addr, reg_addr))
