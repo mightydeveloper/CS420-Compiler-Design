@@ -87,20 +87,25 @@ class Compiler(object):
 
                 # Parameter position
                 func_table = SymbolTable.find_symbol_table(func_name, self.tables)
-                param_index = -1
-                local_index = 1
+
+                local_index = 0
                 for info in func_table.table:
-                    if info.role == 'parameter':
-                        # TODO how to stack parameter
-                        info.set_frame(self.fp, param_index)
-                        param_index -= 1
                     elif info.role == 'variable':
+                        local_index += 1
                         info.set_frame(self.fp, local_index)
-                        if info.array is None:
-                            local_index += 1
-                        else:
-                            local_index += info.array
+                        if info.array is not None:
+                            local_index += info.array - 1
                 self.sp += local_index
+
+                param_index = 0
+                for info in reversed(func_table.table):
+                    if info.role == 'parameter':
+                        if info.array is None:
+                            param_index -= 1
+                            info.set_frame(self.fp, param_index)
+                        else:
+                            param_index -= info.array
+                            info.set_frame(self.fp, param_index)
 
                 # Add function code
                 self.program.append(label_start)
@@ -360,7 +365,8 @@ class Compiler(object):
 
             # store value to memory
             self.program.append('MOVE\t{}@\t{}({}@)'.format(reg_buf, area, reg_addr))
-
+        else:
+            func = SymbolTable.find_function(func_name, self.tables)
 
     def compile_retstmt(self, stmt: AST.RetStmt, scope: str):
         reg = self.compile_expr(stmt.expr, scope)
