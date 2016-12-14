@@ -1,8 +1,11 @@
+
+import pdb
+
 import AST
 import SymbolTable
 import ErrorCollector
 import VR
-import pdb
+import visitor
 
 from collections import defaultdict
 from typing import Union
@@ -366,9 +369,19 @@ class Compiler(object):
         reg = self.compile_expr(stmt.expr, scope)
         self.program.append('MOVE\t{}@\tRP'.format(reg))
 
-    def compile_expr(self, expr: AST.Expr, scope: str) -> str:
+    def compile_expr(self, expr: Union[AST.Expr, AST.TypeCast], scope: str, recursion=False) -> str:
+        if not recursion:
+            visitor.visit_expr(expr, scope, self.tables)
+
         # returns register number
-        if expr.expr_type == 'intnum':
+        if type(expr) == AST.TypeCast:
+            reg = self.compile_expr(expr.expr, scope, True)
+            if expr.cast_type == 'int':
+                self.program.append('F2I\t{0}@\t{0}'.format(reg))
+            else:
+                self.program.append('I2F\t{0}@\t{0}'.format(reg))
+            return reg
+        elif expr.expr_type == 'intnum':
             reg_num = VR.new_reg()
             reg = 'VR({})'.format(reg_num)
             self.program.append('MOVE\t{}\t{}'.format(expr.operand1, reg))
@@ -412,12 +425,48 @@ class Compiler(object):
                 addr = self.fp + info.get_frame(self.fp)
             self.program.append('MOVE\t{}\t{}'.format(addr, reg_addr))
 
-            reg_leval = self.compile_expr(expr.idIDX, scope)
+            reg_leval = self.compile_expr(expr.idIDX, scope, True)
             self.program.append('ADD\t{0}@\t{1}@\t{0}'.format(reg_addr, reg_leval))
 
             # load value to reg_addr
             self.program.append('MOVE\t{}({}@)@\t{}'.format(area, reg_addr, reg_addr))
             return reg_addr
+        elif expr.expr_type == 'paren':
+            reg = self.compile_expr(expr.operand1, scope, True)
+            return reg
+        elif expr.expr_type == 'unop':
+            reg = self.compile_expr(expr.operand1, scope, True)
+            if expr.return_type() == 'int':
+                self.program.append('MUL\t-1\t{0}@\t{0}'.format(reg))
+            else:
+                self.program.append('FMUL\t-1.0\t{0}@\t{0}'.format(reg))
+            return reg
+        elif expr.expr_type == 'binop':
+            reg_out = 'VR({})'.format(VR.new_reg())
+            reg_lhs = self.compile_expr(expr.operand1, scope, True)
+            reg_rhs = self.compile_expr(expr.operand2, scope, True)
+
+            if expr.return_type() == 'int':
+                type_prefix = ''
+            elif expr.return_type() == 'float':
+                type_prefix = 'F'
+            else:
+                raise Exception('Expr return type unknown')
+
+            if expr.operator == '+':
+                op = 'ADD'
+            elif expr.operator == '-':
+                op = 'SUB'
+            elif expr.operator == '*':
+                op = 'MUL'
+            elif expr.operator == '/':
+                op = 'DIV'
+            else:
+                op = ''
+                raise Exception('Expr operator is wrong: ' + expr.operator)
+
+            self.program.append('{}{}\t{}@\t{}@\t{}'.format(type_prefix, op, reg_lhs, reg_rhs, reg_out))
+            return reg_out
         else:
             return -9999
 

@@ -11,6 +11,8 @@ from SymbolTable import *
 import ErrorCollector
 import pdb
 
+from typing import Union
+
 
 def visit_program(p, tables):
     for function in p.FuncList.functions:
@@ -98,7 +100,11 @@ def visit_retstmt(p: RetStmt, scope, tables):
         p.expr = TypeCast(p.expr, func_type)
 
 
-def visit_expr(p: Expr, scope, tables):
+def visit_expr(p: Union[Expr, TypeCast], scope, tables):
+    if type(p) == TypeCast:
+        visit_expr(p.expr, scope, tables)
+        return
+
     p_type = p.expr_type
 
     if p_type == "unop" or p_type == "paren":
