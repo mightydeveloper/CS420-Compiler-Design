@@ -67,3 +67,33 @@ This will generate `tree.txt` as AST output, and `table.txt` as symbol table, pr
 1. ~~Only int is used for boolean, and test expr expectes int~~ (modified to accept float also.)
 2. Switch statement identifier can't be auto casted since it violates syntax
 3. Return statement should have value to return. If not, return value is corrected to 0 with proper return type.
+
+## [Project 4]
+
+### Platform and dependencies
+
+Same environment as Project 3
+
+### Teammate since project 3
+
+Junho CHA, 20100896
+
+### Included files
+
+`lexer.py`, `parser.py`, `main.py`, `parser.out`, `README.md`, `AST.py`, `SymbolTable.py`, `visitor.py`, `ErrorCollector.py`, `VR.py`, `Backend.py`, 'Document.txt'
+
+### Prerequisites
+- Install python 3
+- Install ply 3.9
+
+### Usage
+
+```sh
+$ python main.py -g testfile.c
+```
+
+This will generate `program.T` as AST output. It also generates project 3 output: `tree.txt` as AST output, and `table.txt` as symbol table, prints warning and error to console if exists. Explanation on AR design is written at `Document.txt`
+
+### minic behavior assumption
+
+Access to uninitilized variable will make error.

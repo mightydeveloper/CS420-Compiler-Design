@@ -1,0 +1,24 @@
+AR template explanation
+
+My design uses 6 area: FP, SP, RP, VR, MEM, GLOBAL.
+
+RP stores function return value and GLOBAL contains global scope variables.
+All other area is given in project description.
+
+FP, SP, RP is treated as speical register, so only address 0 of each area used.
+
+AR is stored in MEM, and looks like below.
+
+address	n		|	n+1		n+2		n+3		n+4  ...	|
+value	old FP	|	local variables in declared order	|  ...
+
+address	n+m		|	n+m+1	n+m+2	n+m+3	...		|				|
+value	locals	|	parameters in declared order	|  return addr 	| old FP	| ...
+
+All allocation is in declaration order.
+
+AR is stacked with sequence of (old FP, local variables, parameters, return address)
+
+My AR allocates all local variables declared in function body in advance even program doesn't use.
+
+Main function's old FP is zero. This fact used on return phase so that program will be terminated.
