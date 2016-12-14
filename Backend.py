@@ -336,6 +336,8 @@ class Compiler(object):
     def compile_assign(self, assign: AST.Assign, scope: str):
         table = SymbolTable.find_all_variables(scope, self.tables)
         info = SymbolTable.find_symbol(str(assign.id), table)
+        if info is None:
+            raise Exception('Symbol not found: {} at line {}'.format(str(assign.id), assign.line_position[0]))
         reg_num = VR.new_reg()
         reg_addr = 'VR({})'.format(reg_num)
 
@@ -598,7 +600,7 @@ class Compiler(object):
             self.program.append('MOVE\tRP@\t' + reg_out)
             return reg_out
         else:
-            return -9999
+            raise Exception('Undefined expr type: {} at line {}'.format(expr.expr_type, expr.line_position[0]))
 
 # LABEL allows only alphabets and underscore
 def label_style(scope: str) -> str:
